@@ -85,291 +85,245 @@
 			scene.add(ground);
 
 			// ==========================================
-			//  ДЕТАЛИЗИРОВАННЫЙ СУПЕРКАР С ОБЪЕМОМ
+			//  АККУРАТНЫЙ ОБЪЕМНЫЙ ОРАНЖЕВЫЙ СУПЕРКАР
 			// ==========================================
 			const carGroup = new THREE.Group();
 
 			// Материалы
-			const carPaintMat = new THREE.MeshStandardMaterial({ color: 0xff3b00, metalness: 0.8, roughness: 0.2 }); // Яркий оранжевый металлик
+			const carPaintMat = new THREE.MeshStandardMaterial({ color: 0xff3b00, metalness: 0.7, roughness: 0.2 });
 			const darkMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.5 });
 			const glassMat = new THREE.MeshStandardMaterial({ color: 0x151828, metalness: 0.9, roughness: 0.1 });
 			const lightHeadMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 			const lightTailMat = new THREE.MeshBasicMaterial({ color: 0xff0033 });
-			const rimMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 });
+			const rimMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.1 });
 
-			// 1. Центральное шасси (база)
-			const base = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.35, 3.8), carPaintMat);
-			base.position.set(0, 0.35, 0);
-			carGroup.add(base);
+			// 1. Главный монокок (кузов)
+			const bodyMain = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.45, 3.6), carPaintMat);
+			bodyMain.position.set(0, 0.38, 0);
+			carGroup.add(bodyMain);
 
-			// 2. Передние и задние обемные колесные арки (fenders)
-			const fenderGeo = new THREE.BoxGeometry(0.3, 0.45, 1.1);
+			// 2. Спортивный наклонный капот
+			const hood = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.22, 1.2), carPaintMat);
+			hood.position.set(0, 0.52, 1.0);
+			hood.rotation.x = 0.08;
+			carGroup.add(hood);
 
-			const fenderFL = new THREE.Mesh(fenderGeo, carPaintMat);
-			fenderFL.position.set(-0.9, 0.4, 1.2);
-			carGroup.add(fenderFL);
+			// 3. Кабина (стеклянный купол)
+			const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.48, 1.5), glassMat);
+			cabin.position.set(0, 0.78, -0.1);
+			carGroup.add(cabin);
 
-			const fenderFR = new THREE.Mesh(fenderGeo, carPaintMat);
-			fenderFR.position.set(0.9, 0.4, 1.2);
-			carGroup.add(fenderFR);
+			// Крыша
+			const roof = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.06, 0.9), carPaintMat);
+			roof.position.set(0, 1.03, -0.15);
+			carGroup.add(roof);
 
-			const fenderRL = new THREE.Mesh(fenderGeo, carPaintMat);
-			fenderRL.position.set(-0.9, 0.42, -1.2);
-			carGroup.add(fenderRL);
-
-			const fenderRR = new THREE.Mesh(fenderGeo, carPaintMat);
-			fenderRR.position.set(0.9, 0.42, -1.2);
-			carGroup.add(fenderRR);
-
-			// 3. Капот с центральным объемом
-			const hoodCenter = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 1.3), carPaintMat);
-			hoodCenter.position.set(0, 0.55, 1.05);
-			hoodCenter.rotation.x = 0.12; // Наклон капота
-			carGroup.add(hoodCenter);
-
-			// 4. Объемная Кабина и Лобовое стекло
-			const cabinMain = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.5, 1.5), glassMat);
-			cabinMain.position.set(0, 0.85, -0.1);
-			carGroup.add(cabinMain);
-
-			// Стеклянная крышка двигателя сзади
-			const engineGlass = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.15, 1.1), glassMat);
-			engineGlass.position.set(0, 0.7, -1.1);
-			engineGlass.rotation.x = -0.15;
-			carGroup.add(engineGlass);
-
-			// 5. Боковые пороги и воздухозаборники
-			const sideIntakeL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.35, 0.8), darkMat);
-			sideIntakeL.position.set(-0.85, 0.45, -0.4);
-			carGroup.add(sideIntakeL);
-
-			const sideIntakeR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.35, 0.8), darkMat);
-			sideIntakeR.position.set(0.85, 0.45, -0.4);
-			carGroup.add(sideIntakeR);
-
-			// 6. Передний агрессивный бампер и решетка
-			const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.22, 0.3), darkMat);
-			frontBumper.position.set(0, 0.25, 1.85);
+			// 4. Передний бампер с обдувом
+			const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.25, 0.3), darkMat);
+			frontBumper.position.set(0, 0.25, 1.8);
 			carGroup.add(frontBumper);
 
-			// Фары (узкие неоновые)
-			const lightL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.15), lightHeadMat);
-			lightL.position.set(-0.6, 0.45, 1.82);
-			lightL.rotation.y = -0.25;
+			// Фары
+			const lightL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.1), lightHeadMat);
+			lightL.position.set(-0.5, 0.45, 1.81);
+			lightL.rotation.y = -0.15;
 			carGroup.add(lightL);
 
-			const lightR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.15), lightHeadMat);
-			lightR.position.set(0.6, 0.45, 1.82);
-			lightR.rotation.y = 0.25;
+			const lightR = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.1), lightHeadMat);
+			lightR.position.set(0.5, 0.45, 1.81);
+			lightR.rotation.y = 0.15;
 			carGroup.add(lightR);
 
-			// 7. Задний бампер, выхлоп и фонари
-			const rearBumper = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, 0.2), darkMat);
-			rearBumper.position.set(0, 0.35, -1.85);
+			// 5. Задний бампер и стоп-сигналы
+			const rearBumper = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.3, 0.2), darkMat);
+			rearBumper.position.set(0, 0.35, -1.8);
 			carGroup.add(rearBumper);
 
-			// Задние красные стоп-сигналы
-			const tailLightL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.1), lightTailMat);
-			tailLightL.position.set(-0.55, 0.52, -1.9);
-			carGroup.add(tailLightL);
+			const tailL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.1), lightTailMat);
+			tailL.position.set(-0.45, 0.5, -1.86);
+			carGroup.add(tailL);
 
-			const tailLightR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.1), lightTailMat);
-			tailLightR.position.set(0.55, 0.52, -1.9);
-			carGroup.add(tailLightR);
+			const tailR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.1), lightTailMat);
+			tailR.position.set(0.45, 0.5, -1.86);
+			carGroup.add(tailR);
 
-			// Выхлопные трубы
-			const exhaust = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.15), rimMat);
-			exhaust.position.set(0, 0.28, -1.92);
-			carGroup.add(exhaust);
-
-			// 8. Черное спортивное антикрыло (спойлер)
-			const spoilerWing = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.45), darkMat);
-			spoilerWing.position.set(0, 1.0, -1.7);
+			// Спойлер
+			const spoilerWing = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 0.4), darkMat);
+			spoilerWing.position.set(0, 0.92, -1.65);
 			carGroup.add(spoilerWing);
 
-			const standL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 0.1), darkMat);
-			standL.position.set(-0.65, 0.8, -1.7);
+			const standL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), darkMat);
+			standL.position.set(-0.55, 0.77, -1.65);
 			carGroup.add(standL);
 
-			const standR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 0.1), darkMat);
-			standR.position.set(0.65, 0.8, -1.7);
+			const standR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), darkMat);
+			standR.position.set(0.55, 0.77, -1.65);
 			carGroup.add(standR);
 
-			// 9. Детализированные колеса с дисками
-			const tireGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.26, 20);
+			// 6. Колеса (Вынесены наружу, чтобы НЕ пересекались с кузовом)
+			const tireGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.22, 20);
 			tireGeo.rotateZ(Math.PI / 2);
 
-			// Диск с 5 спицами
-			function createDetailedWheel() {
-			const wheelHolder = new THREE.Group();
-
-			// Шина
+			function createWheel() {
+			const holder = new THREE.Group();
 			const tire = new THREE.Mesh(tireGeo, darkMat);
-			wheelHolder.add(tire);
+			holder.add(tire);
 
-			// Центр диска
-			const rimCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.27, 12), rimMat);
-			rimCenter.rotateZ(Math.PI / 2);
-			wheelHolder.add(rimCenter);
+			const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.23, 10), rimMat);
+			rim.rotateZ(Math.PI / 2);
+			holder.add(rim);
 
-			// Спицы
-			for(let i = 0; i < 5; i++) {
-                const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.36, 0.05), rimMat);
-                spoke.rotation.x = (i * Math.PI) / 2.5;
-                wheelHolder.add(spoke);
-            }
+			return holder;
+			}
 
-            return wheelHolder;
-        }
+			// Поворотные передние колеса (вылет X = 0.92 гарантирует отсутствие клиппинга)
+			const frontLeftWheelPivot = new THREE.Group();
+			frontLeftWheelPivot.position.set(-0.92, 0.3, 1.15);
+			const wheelFL = createWheel();
+			frontLeftWheelPivot.add(wheelFL);
+			carGroup.add(frontLeftWheelPivot);
 
-        // Передние поворотные колеса
-        const frontLeftWheelPivot = new THREE.Group();
-        frontLeftWheelPivot.position.set(-0.95, 0.32, 1.2);
-        const wheelFL = createDetailedWheel();
-        frontLeftWheelPivot.add(wheelFL);
-        carGroup.add(frontLeftWheelPivot);
+			const frontRightWheelPivot = new THREE.Group();
+			frontRightWheelPivot.position.set(0.92, 0.3, 1.15);
+			const wheelFR = createWheel();
+			frontRightWheelPivot.add(wheelFR);
+			carGroup.add(frontRightWheelPivot);
 
-        const frontRightWheelPivot = new THREE.Group();
-        frontRightWheelPivot.position.set(0.95, 0.32, 1.2);
-        const wheelFR = createDetailedWheel();
-        frontRightWheelPivot.add(wheelFR);
-        carGroup.add(frontRightWheelPivot);
+			// Задние колеса
+			const wheelBL = createWheel();
+			wheelBL.position.set(-0.92, 0.3, -1.15);
+			carGroup.add(wheelBL);
 
-        // Задние колеса
-        const wheelBL = createDetailedWheel();
-        wheelBL.position.set(-0.95, 0.32, -1.2);
-        carGroup.add(wheelBL);
+			const wheelBR = createWheel();
+			wheelBR.position.set(0.92, 0.3, -1.15);
+			carGroup.add(wheelBR);
 
-        const wheelBR = createDetailedWheel();
-        wheelBR.position.set(0.95, 0.32, -1.2);
-        carGroup.add(wheelBR);
+			carGroup.position.set(0, 0, 0);
+			scene.add(carGroup);
 
-        carGroup.position.set(0, 0, 0);
-        scene.add(carGroup);
+			// Управление
+			let keyLeft = false;
+			let keyRight = false;
+			let btnLeft = false;
+			let btnRight = false;
 
-        // Управление
-        let keyLeft = false;
-        let keyRight = false;
-        let btnLeft = false;
-        let btnRight = false;
+			window.addEventListener('keydown', (e) => {
+			if (e.code === 'KeyA' || e.code === 'ArrowLeft') keyLeft = true;
+			if (e.code === 'KeyD' || e.code === 'ArrowRight') keyRight = true;
+			if (e.code === 'Space') isNitro = true;
+			});
 
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'KeyA' || e.code === 'ArrowLeft') keyLeft = true;
-            if (e.code === 'KeyD' || e.code === 'ArrowRight') keyRight = true;
-            if (e.code === 'Space') isNitro = true;
-        });
+			window.addEventListener('keyup', (e) => {
+			if (e.code === 'KeyA' || e.code === 'ArrowLeft') keyLeft = false;
+			if (e.code === 'KeyD' || e.code === 'ArrowRight') keyRight = false;
+			if (e.code === 'Space') isNitro = false;
+			});
 
-        window.addEventListener('keyup', (e) => {
-            if (e.code === 'KeyA' || e.code === 'ArrowLeft') keyLeft = false;
-            if (e.code === 'KeyD' || e.code === 'ArrowRight') keyRight = false;
-            if (e.code === 'Space') isNitro = false;
-        });
+			const leftBtn = document.getElementById('left');
+			const rightBtn = document.getElementById('right');
+			const nitroBtn = document.getElementById('nitro');
 
-        const leftBtn = document.getElementById('left');
-        const rightBtn = document.getElementById('right');
-        const nitroBtn = document.getElementById('nitro');
+			leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); btnLeft = true; });
+			leftBtn.addEventListener('pointerup', () => btnLeft = false);
+			leftBtn.addEventListener('pointercancel', () => btnLeft = false);
+			leftBtn.addEventListener('pointerleave', () => btnLeft = false);
 
-        leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); btnLeft = true; });
-        leftBtn.addEventListener('pointerup', () => btnLeft = false);
-        leftBtn.addEventListener('pointercancel', () => btnLeft = false);
-        leftBtn.addEventListener('pointerleave', () => btnLeft = false);
+			rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); btnRight = true; });
+			rightBtn.addEventListener('pointerup', () => btnRight = false);
+			rightBtn.addEventListener('pointercancel', () => btnRight = false);
+			rightBtn.addEventListener('pointerleave', () => btnRight = false);
 
-        rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); btnRight = true; });
-        rightBtn.addEventListener('pointerup', () => btnRight = false);
-        rightBtn.addEventListener('pointercancel', () => btnRight = false);
-        rightBtn.addEventListener('pointerleave', () => btnRight = false);
+			nitroBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isNitro = true; });
+			nitroBtn.addEventListener('pointerup', () => isNitro = false);
+			nitroBtn.addEventListener('pointercancel', () => isNitro = false);
+			nitroBtn.addEventListener('pointerleave', () => isNitro = false);
 
-        nitroBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isNitro = true; });
-        nitroBtn.addEventListener('pointerup', () => isNitro = false);
-        nitroBtn.addEventListener('pointercancel', () => isNitro = false);
-        nitroBtn.addEventListener('pointerleave', () => isNitro = false);
+			document.getElementById('start-btn').addEventListener('pointerdown', startGame);
+			document.getElementById('restart-btn').addEventListener('pointerdown', startGame);
 
-        document.getElementById('start-btn').addEventListener('pointerdown', startGame);
-        document.getElementById('restart-btn').addEventListener('pointerdown', startGame);
+			function startGame() {
+			document.getElementById('start-screen').style.display = 'none';
+			document.getElementById('gameover-screen').style.display = 'none';
+			document.getElementById('ui').style.display = 'block';
+			document.getElementById('controls').style.display = 'flex';
 
-        function startGame() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('gameover-screen').style.display = 'none';
-            document.getElementById('ui').style.display = 'block';
-            document.getElementById('controls').style.display = 'flex';
-            
-            score = 0;
-            carGroup.position.set(0, 0, 0);
-            carAngle = 0;
-            currentTurn = 0;
-            keyLeft = false;
-            keyRight = false;
-            btnLeft = false;
-            btnRight = false;
-            gameActive = true;
-        }
+			score = 0;
+			carGroup.position.set(0, 0, 0);
+			carAngle = 0;
+			currentTurn = 0;
+			keyLeft = false;
+			keyRight = false;
+			btnLeft = false;
+			btnRight = false;
+			gameActive = true;
+			}
 
-        function gameOver() {
-            gameActive = false;
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('controls').style.display = 'none';
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('gameover-screen').style.display = 'flex';
-            tg.sendData(JSON.stringify({ score: score, coins: coins }));
-        }
+			function gameOver() {
+			gameActive = false;
+			document.getElementById('ui').style.display = 'none';
+			document.getElementById('controls').style.display = 'none';
+			document.getElementById('final-score').innerText = score;
+			document.getElementById('gameover-screen').style.display = 'flex';
+			tg.sendData(JSON.stringify({ score: score, coins: coins }));
+			}
 
-        function animate() {
-            requestAnimationFrame(animate);
+			function animate() {
+			requestAnimationFrame(animate);
 
-            if (gameActive) {
-                let targetSpeed = isNitro ? baseSpeed * 2.0 : baseSpeed;
-                currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.05);
+			if (gameActive) {
+			let targetSpeed = isNitro ? baseSpeed * 2.0 : baseSpeed;
+			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.05);
 
-                let targetTurn = 0;
-                if (keyLeft || btnLeft) targetTurn = 1;
-                if (keyRight || btnRight) targetTurn = -1;
+			let targetTurn = 0;
+			if (keyLeft || btnLeft) targetTurn = 1;
+			if (keyRight || btnRight) targetTurn = -1;
 
-                currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.1);
+			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.1);
 
-                carAngle += currentTurn * 0.035;
-                carGroup.rotation.y = carAngle;
-                carGroup.rotation.z = currentTurn * -0.12;
+			carAngle += currentTurn * 0.035;
+			carGroup.rotation.y = carAngle;
+			carGroup.rotation.z = currentTurn * -0.12;
 
-                let targetWheelRotation = currentTurn * 0.5;
-                frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.15);
-                frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.15);
+			let targetWheelRotation = currentTurn * 0.45;
+			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.15);
+			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.15);
 
-                wheelFL.rotation.x -= currentSpeed * 2.5;
-                wheelFR.rotation.x -= currentSpeed * 2.5;
-                wheelBL.rotation.x -= currentSpeed * 2.5;
-                wheelBR.rotation.x -= currentSpeed * 2.5;
+			wheelFL.rotation.x -= currentSpeed * 2.5;
+			wheelFR.rotation.x -= currentSpeed * 2.5;
+			wheelBL.rotation.x -= currentSpeed * 2.5;
+			wheelBR.rotation.x -= currentSpeed * 2.5;
 
-                carGroup.position.x += Math.sin(carAngle) * currentSpeed;
-                carGroup.position.z += Math.cos(carAngle) * currentSpeed;
+			carGroup.position.x += Math.sin(carAngle) * currentSpeed;
+			carGroup.position.z += Math.cos(carAngle) * currentSpeed;
 
-                score += 1;
-                document.getElementById('score').innerText = score;
+			score += 1;
+			document.getElementById('score').innerText = score;
 
-                if (Math.abs(carGroup.position.x) > 70 || Math.abs(carGroup.position.z) > 70) {
-                    gameOver();
-                }
+			if (Math.abs(carGroup.position.x) > 70 || Math.abs(carGroup.position.z) > 70) {
+			gameOver();
+			}
 
-                const camDist = 8.5;
-                const camHeight = 3.5;
-                let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
-                let targetCamZ = carGroup.position.z - Math.cos(carAngle) * camDist;
+			const camDist = 8.5;
+			const camHeight = 3.5;
+			let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
+			let targetCamZ = carGroup.position.z - Math.cos(carAngle) * camDist;
 
-                camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
-                camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.1);
-                camera.position.y = carGroup.position.y + camHeight;
-                
-                camera.lookAt(carGroup.position.x, carGroup.position.y + 0.5, carGroup.position.z);
-            }
+			camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
+			camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.1);
+			camera.position.y = carGroup.position.y + camHeight;
 
-            renderer.render(scene, camera);
-        }
-        animate();
+			camera.lookAt(carGroup.position.x, carGroup.position.y + 0.5, carGroup.position.z);
+			}
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+			renderer.render(scene, camera);
+			}
+			animate();
+
+			window.addEventListener('resize', () => {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			});
 		</script>
 	</body>
 </html>
