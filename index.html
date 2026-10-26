@@ -75,7 +75,7 @@
 			scene.add(dirLight);
 
 			// ==========================================
-			//  МАТЕРИАЛЫ И КАРТА
+			//  МАТЕРИАЛЫ И ГЕНЕРАЦИЯ КАРТЫ ПО ЧЕРТЕЖУ
 			// ==========================================
 			const darkMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.5 });
 			const wallMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.7 });
@@ -119,43 +119,54 @@
             });
         }
 
-        // --- 1. ВНУТРЕННИЕ КВАРТАЛЫ (СЕТКА 4х4) ---
-        // Шаг между центрами кварталов = 34 единицы, ширина квартала = 20
-        // Проезжая часть = 14 единиц (широкие 2-полосные дороги везде)
-        const gridCoords = [-51, -17, 17, 51];
+        // --- 1. ВНУТРЕННИЕ ЗДАНИЯ СО СТРОГИМ СООТВЕТСТВИЕМ ЧЕРТЕЖУ (СЕТКА 4x4) ---
+        // Точные размеры зданий (ширина W, глубина D), чтобы некоторые были квадратными, а некоторые прямоугольными:
+        const buildingsData = [
+            // Ряд 1 (верхний)
+            { x: -51, z: -51, w: 18, d: 18, stories: 2 }, // квадрат
+            { x: -17, z: -51, w: 22, d: 15, stories: 3 }, // прямоугольник
+            { x:  17, z: -51, w: 24, d: 16, stories: 2 }, // прямоугольник
+            { x:  51, z: -51, w: 16, d: 22, stories: 3 }, // прямоугольник вертикальный
 
-        gridCoords.forEach(bx => {
-            gridCoords.forEach(bz => {
-                const stories = Math.random() > 0.5 ? 2 : 3;
-                createBuilding(bx, bz, 20, 20, stories);
+            // Ряд 2
+            { x: -51, z: -17, w: 18, d: 18, stories: 3 }, // квадрат
+            { x: -17, z: -17, w: 20, d: 20, stories: 2 }, // квадрат
+            { x:  17, z: -17, w: 19, d: 19, stories: 3 }, // квадрат
+            { x:  51, z: -17, w: 24, d: 14, stories: 2 }, // прямоугольник
 
-                const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(23, 0.08, 23), sidewalkMat);
-                sidewalk.position.set(bx, 0.04, bz);
-                scene.add(sidewalk);
-            });
+            // Ряд 3
+            { x: -51, z:  17, w: 18, d: 18, stories: 2 }, // квадрат
+            { x: -17, z:  17, w: 18, d: 18, stories: 3 }, // квадрат
+            { x:  17, z:  17, w: 22, d: 15, stories: 2 }, // прямоугольник
+            { x:  51, z:  17, w: 18, d: 25, stories: 3 }, // большой вертикальный прямоугольник
+
+            // Ряд 4 (нижний)
+            { x: -51, z:  51, w: 18, d: 18, stories: 3 }, // квадрат
+            { x: -17, z:  51, w: 20, d: 18, stories: 2 }, // прямоугольник
+            { x:  17, z:  51, w: 18, d: 18, stories: 2 }, // квадрат
+            { x:  51, z:  51, w: 22, d: 16, stories: 3 }  // прямоугольник
+        ];
+
+        buildingsData.forEach(b => {
+            createBuilding(b.x, b.z, b.w, b.d, b.stories);
+            // Тротуар под каждый квартал с равными отступами для одинаковой ширины дорог
+            const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(24, 0.08, 24), sidewalkMat);
+            sidewalk.position.set(b.x, 0.04, b.z);
+            scene.add(sidewalk);
         });
 
-        // --- 2. ВНЕШНИЙ ПЕРИМЕТР (ПОЛНОЦЕННЫЕ ЗДАНИЯ ВОКРУГ КАРТЫ) ---
+        // --- 2. НЕПРЕРЫВНЫЙ ВНЕШНИЙ ШЕЛЬФ ДОМОВ ПО ПЕРИМЕТРУ ---
         const outerLimit = 85;
-        const outerBlockWidth = 20;
+        const beltThickness = 16;
 
-        // Здания по внешнему северу и югу
-        gridCoords.forEach(bx => {
-            createBuilding(bx, outerLimit, outerBlockWidth, outerBlockWidth, 3);
-            createBuilding(bx, -outerLimit, outerBlockWidth, outerBlockWidth, 3);
-        });
-        // Здания по внешнему западу и востоку
-        gridCoords.forEach(bz => {
-            createBuilding(-outerLimit, bz, outerBlockWidth, outerBlockWidth, 3);
-            createBuilding(outerLimit, bz, outerBlockWidth, outerBlockWidth, 3);
-        });
-        // Угловые внешние здания
-        createBuilding(-outerLimit, outerLimit, outerBlockWidth, outerBlockWidth, 3);
-        createBuilding(outerLimit, outerLimit, outerBlockWidth, outerBlockWidth, 3);
-        createBuilding(-outerLimit, -outerLimit, outerBlockWidth, outerBlockWidth, 3);
-        createBuilding(outerLimit, -outerLimit, outerBlockWidth, outerBlockWidth, 3);
+        // Северный и южный непрерывные блоки
+        createBuilding(0, outerLimit, 170, beltThickness, 3);
+        createBuilding(0, -outerLimit, 170, beltThickness, 3);
+        // Западный и восточный непрерывные блоки
+        createBuilding(-outerLimit, 0, beltThickness, 170, 3);
+        createBuilding(outerLimit, 0, beltThickness, 170, 3);
 
-        // --- 3. РАЗДЕЛИТЕЛЬНЫЕ ПОЛОСЫ ПО ЦЕНТРУ ВСЕХ ДОРОГ ---
+        // --- 3. РАЗДЕЛИТЕЛЬНЫЕ ПОЛОСЫ ПО ЦЕНТРУ ДОРОГ ---
         const lineCoords = [-68, -34, 0, 34, 68];
         lineCoords.forEach(coord => {
             const lineZ = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.09, 160), lineMat);
@@ -167,7 +178,7 @@
             scene.add(lineX);
         });
 
-        // Фонарные столбы на перекрестках
+        // Фонари на перекрестках
         const lampMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
         lineCoords.forEach(lx => {
             lineCoords.forEach(lz => {
@@ -484,9 +495,9 @@
                 score += 1;
                 document.getElementById('score').innerText = score;
 
-                // --- КАМЕРА ОТДАЛЕНА И НАКЛОНЕНА ПОД 70 ГРАДУСОВ С ОБЗОРОМ КРЫШ И ДОМОВ ---
-                const camDist = 14.0;  // Отдаление сзади
-                const camHeight = 15.0; // Высота подъема для угла 70 градусов
+                // Камера под 70 градусов с отличным обзором
+                const camDist = 14.0;
+                const camHeight = 15.0;
                 let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
                 let targetCamZ = carGroup.position.z - Math.cos(carAngle) * camDist;
 
