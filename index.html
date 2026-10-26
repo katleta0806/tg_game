@@ -3,539 +3,306 @@
 	<head>
 		<meta charset="UTF-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-				<title>NIGHT CITY RACER 3D</title>
+				<title>CITY RACER 3D</title>
 				<script src="https://telegram.org/js/telegram-web-app.js"></script>
 				<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 				<style>
-					* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-					body { margin: 0; overflow: hidden; background: #030308; font-family: 'Segoe UI', Roboto, sans-serif; }
+					body { margin: 0; overflow: hidden; background: #050510; font-family: sans-serif; user-select: none; }
+					#ui { position: absolute; top: 15px; left: 15px; color: #fff; font-size: 18px; text-shadow: 1px 1px 4px #000; pointer-events: none; z-index: 10; display: none; }
+					#pause-btn { position: absolute; top: 15px; right: 15px; background: rgba(255, 69, 0, 0.4); border: 2px solid #ff4500; border-radius: 20px; color: #fff; padding: 8px 18px; font-size: 14px; font-weight: bold; cursor: pointer; backdrop-filter: blur(5px); z-index: 15; display: none; }
+					#pause-btn:active { transform: scale(0.95); }
 
-					#ui {
-					position: absolute;
-					top: 20px;
-					left: 20px;
-					color: #fff;
-					font-size: 18px;
-					font-weight: 700;
-					text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
-					pointer-events: none;
-					z-index: 10;
-					display: none;
-					background: rgba(10, 10, 25, 0.75);
-					padding: 12px 20px;
-					border-radius: 12px;
-					border: 1px solid rgba(0, 255, 255, 0.3);
-					backdrop-filter: blur(8px);
-					line-height: 1.5;
-					}
-					#ui span { color: #ffaa00; }
-					#ui #coins-val { color: #ffd700; }
+					#controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-around; padding: 0 20px; box-sizing: border-box; z-index: 10; display: none; }
+					.btn { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; color: #fff; font-size: 24px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+					#nitro { background: rgba(255, 69, 0, 0.4); border-color: orange; }
 
-					#controls {
-					position: absolute;
-					bottom: 25px;
-					width: 100%;
-					display: flex;
-					justify-content: space-between;
-					padding: 0 25px;
-					z-index: 10;
-					display: none;
-					pointer-events: none;
-					}
-					.btn-group { display: flex; gap: 15px; pointer-events: auto; }
-					.btn {
-					width: 70px;
-					height: 70px;
-					background: rgba(15, 20, 35, 0.7);
-					border: 2px solid rgba(0, 255, 255, 0.5);
-					border-radius: 50%;
-					color: #fff;
-					font-size: 26px;
-					display: flex;
-					align-items: center;
-					justify-content: center;
-					backdrop-filter: blur(8px);
-					box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
-					touch-action: manipulation;
-					}
-					.btn:active { transform: scale(0.92); background: rgba(0, 255, 255, 0.3); }
-					#nitro {
-					background: rgba(255, 69, 0, 0.35);
-					border-color: #ff4500;
-					box-shadow: 0 0 15px rgba(255, 69, 0, 0.4);
-					pointer-events: auto;
-					}
-					#nitro:active { background: rgba(255, 69, 0, 0.6); }
-
-					.screen {
-					position: absolute;
-					top: 0;
-					left: 0;
-					width: 100%;
-					height: 100%;
-					background: radial-gradient(circle, rgba(15, 10, 30, 0.92) 0%, rgba(3, 3, 10, 0.97) 100%);
-					display: flex;
-					flex-direction: column;
-					align-items: center;
-					justify-content: center;
-					z-index: 20;
-					color: #fff;
-					text-align: center;
-					padding: 20px;
-					}
-					.menu-card {
-					background: rgba(15, 20, 35, 0.85);
-					border: 1px solid rgba(255, 100, 0, 0.4);
-					padding: 35px 40px;
-					border-radius: 20px;
-					box-shadow: 0 0 30px rgba(255, 69, 0, 0.25);
-					backdrop-filter: blur(12px);
-					max-width: 420px;
-					width: 100%;
-					}
-					.menu-btn {
-					padding: 16px 45px;
-					background: linear-gradient(135deg, #ff4500, #ff8700);
-					border: none;
-					border-radius: 30px;
-					color: #fff;
-					font-size: 20px;
-					font-weight: 800;
-					cursor: pointer;
-					margin-top: 25px;
-					box-shadow: 0 0 20px rgba(255,69,0,0.6);
-					transition: all 0.2s ease;
-					letter-spacing: 1px;
-					}
-					.menu-btn:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(255,69,0,0.9); }
-					.menu-btn:active { transform: scale(0.96); }
-					h1 { margin: 0 0 10px 0; font-size: 34px; letter-spacing: 3px; color: #ff5500; text-shadow: 0 0 18px rgba(255,85,0,0.8); }
-					p { color: #aaa; font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
-					.author { margin-top: 20px; font-size: 13px; color: #00ffff; letter-spacing: 3px; text-transform: uppercase; }
+					.screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 16, 0.88); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; color: #fff; text-align: center; }
+					.menu-btn { padding: 15px 40px; background: #ff4500; border: none; border-radius: 30px; color: #fff; font-size: 20px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 0 15px rgba(255,69,0,0.6); }
+					.menu-btn:active { transform: scale(0.95); }
+					h1 { margin: 0 0 5px 0; font-size: 34px; letter-spacing: 2px; color: #ff4500; text-shadow: 0 0 12px rgba(255,69,0,0.8); }
+					p { color: #aaa; font-size: 14px; margin: 4px 0; }
+					.author { margin-top: 15px; font-size: 12px; color: #00ffff; letter-spacing: 3px; text-transform: uppercase; }
 				</style>
 			</head>
 	<body>
 		<div id="start-screen" class="screen">
-			<div class="menu-card">
-				<h1>NIGHT CITY RACER</h1>
-				<p>
-					Управление: <b>A / D</b> или <b>Стрелки</b><br>
-						Ускорение: <b>Пробел</b> (Нитро)
-				</p>
-				<p>Исследуйте ночной город и собирайте светящиеся монеты!</p>
-				<button class="menu-btn" id="start-btn">СТАРТ</button>
-				<div class="author">BY KATLETA0806</div>
-			</div>
-		</div>
-
-		<div id="gameover-screen" class="screen" style="display: none;">
-			<div class="menu-card">
-				<h1>ЗАЕЗД ОКОНЧЕН</h1>
-				<p style="font-size: 18px; margin-top: 15px;">
-					Счет: <span id="final-score" style="color: #ffaa00; font-weight: bold;">0</span>
-				</p>
-				<p style="font-size: 18px;">
-					Монеты: <span id="final-coins" style="color: #ffd700; font-weight: bold;">0</span>
-				</p>
-				<button class="menu-btn" id="restart-btn">ИГРАТЬ СНОВА</button>
-			</div>
+			<h1>CITY RACER 3D</h1>
+			<p>Управление: A / D или Стрелки (Пробел — Нитро)</p>
+			<p style="color: #ffaa00;">Зажми Влево + Вправо (A + D) для Заднего Хода!</p>
+			<button class="menu-btn" id="start-btn">СТАРТ</button>
+			<div class="author">BY KATLETA0806</div>
 		</div>
 
 		<div id="ui">
 			Очки: <span id="score">0</span><br>
-				Монеты: <span id="coins-val">0</span>
-			</div>
+				Монеты: <span id="coins">0</span>
+		</div>
+		<button id="pause-btn">⏸ МЕНЮ</button>
 
 		<div id="controls">
-			<div class="btn-group">
-				<div class="btn" id="left">◀</div>
-				<div class="btn" id="right">▶</div>
-			</div>
+			<div class="btn" id="left">◀</div>
 			<div class="btn" id="nitro">🔥</div>
+			<div class="btn" id="right">▶</div>
 		</div>
 
 		<script>
-			// Telegram WebApp Initialization
-			const tg = window.Telegram?.WebApp;
-			if (tg) { tg.expand(); }
+			const tg = window.Telegram.WebApp;
+			tg.expand();
 
 			let score = 0;
 			let coins = 0;
-			let baseSpeed = 0.32;
-			let currentSpeed = 0;
+			let baseSpeed = 0.16; // Ещё более комфортная и плавная скорость
+			let reverseSpeed = 0.08;
+			let currentSpeed = 0.16;
 			let isNitro = false;
 			let gameActive = false;
 			let carAngle = 0;
 			let currentTurn = 0;
 
-			// Scene Setup
 			const scene = new THREE.Scene();
-			scene.background = new THREE.Color(0x04040c);
-			scene.fog = new THREE.FogExp2(0x04040c, 0.012);
+			scene.background = new THREE.Color(0x050510);
+			scene.fog = new THREE.FogExp2(0x050510, 0.018);
 
 			const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-			const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+			const renderer = new THREE.WebGLRenderer({ antialias: true });
 			renderer.setSize(window.innerWidth, window.innerHeight);
-			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 			document.body.appendChild(renderer.domElement);
 
-			// Ambient & Moon Light
-			const ambientLight = new THREE.AmbientLight(0x202040, 0.7);
-			scene.add(ambientLight);
+			scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+			const dirLight = new THREE.DirectionalLight(0xffaa00, 0.8);
+			dirLight.position.set(20, 40, -20);
+			scene.add(dirLight);
 
-			const moonLight = new THREE.DirectionalLight(0x5070a0, 0.5);
-			moonLight.position.set(50, 80, -50);
-			scene.add(moonLight);
+			// ==========================================
+			//  МАТЕРИАЛЫ И ОКРУЖЕНИЕ
+			// ==========================================
+			const darkMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.5 });
+			const wallMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.7 });
+			const windowLitMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+			const windowDarkMat = new THREE.MeshStandardMaterial({ color: 0x0d0d15 });
+			const roadMat = new THREE.MeshStandardMaterial({ color: 0x15151c, roughness: 0.8 });
+			const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x282832, roughness: 0.6 });
 
-			// Ground Base
-			const citySize = 360;
-			const ground = new THREE.Mesh(
-			new THREE.PlaneGeometry(citySize, citySize),
-			new THREE.MeshStandardMaterial({ color: 0x090a10, roughness: 0.95 })
-			);
+			const citySize = 160;
+			const ground = new THREE.Mesh(new THREE.PlaneGeometry(citySize, citySize), roadMat);
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
 
-			// ===================================================
-			// CITY GENERATOR (Roads, 2-3 Story Buildings, Lamps)
-			// ===================================================
-			const coinObjects = [];
-			const buildingColliders = [];
-			const blockCount = 6;
-			const roadWidth = 14;
-			const blockSize = 38;
-			const halfCity = (blockCount * (blockSize + roadWidth)) / 2;
+			// Массив хитбоксов для коллизий (здания и стены)
+			const colliders = [];
 
-			const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x14141d, roughness: 0.8 });
-			const markingMat = new THREE.MeshBasicMaterial({ color: 0xdddddd });
-			const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x222230, roughness: 0.7 });
-			const lampPostMat = new THREE.MeshStandardMaterial({ color: 0x444455, metalness: 0.8 });
-			const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xffea88 });
-			const darkMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.5 });
-			const windowColors = [0xffb733, 0x00d8ff, 0xff0055, 0xffeeaa, 0x00ffaa];
+			// Функция генерации зданий (2-3 этажа)
+			function createBuilding(x, z, w, d, stories) {
+			const storyHeight = 3.2;
+			const h = stories * storyHeight;
+			const bMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+			bMesh.position.set(x, h / 2, z);
+			scene.add(bMesh);
 
-			// 1. Generate Grid of Roads & Sidewalks
-			for (let i = 0; i <= blockCount; i++) {
-			const pos = -halfCity + i * (blockSize + roadWidth);
-
-			// Horizontal & Vertical Roads
-			const roadH = new THREE.Mesh(new THREE.PlaneGeometry(citySize, roadWidth), asphaltMat);
-			roadH.rotation.x = -Math.PI / 2;
-			roadH.position.set(0, 0.01, pos);
-			scene.add(roadH);
-
-			const roadV = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth, citySize), asphaltMat);
-			roadV.rotation.x = -Math.PI / 2;
-			roadV.position.set(pos, 0.01, 0);
-			scene.add(roadV);
-
-			// Center Road Dashes
-			for (let d = -citySize / 2; d < citySize / 2; d += 7) {
-                const dashH = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 0.4), markingMat);
-                dashH.rotation.x = -Math.PI / 2;
-                dashH.position.set(d, 0.02, pos);
-                scene.add(dashH);
-
-                const dashV = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 3.5), markingMat);
-                dashV.rotation.x = -Math.PI / 2;
-                dashV.position.set(pos, 0.02, d);
-                scene.add(dashV);
-            }
-        }
-
-        // Helper to add streetlights with glowing PointLight sources
-        function createStreetLamp(x, z, rotY) {
-            const lampGroup = new THREE.Group();
-            lampGroup.position.set(x, 0, z);
-            lampGroup.rotation.y = rotY;
-
-            // Pole
-            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 5.5, 8), lampPostMat);
-            pole.position.y = 2.75;
-            lampGroup.add(pole);
-
-            // Top Arm
-            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.2), lampPostMat);
-            arm.position.set(0, 5.4, 0.5);
-            lampGroup.add(arm);
-
-            // Light Head
-            const bulb = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.4), lampBulbMat);
-            bulb.position.set(0, 5.3, 1.0);
-            lampGroup.add(bulb);
-
-            // PointLight cast onto road
-            const light = new THREE.PointLight(0xffea99, 1.8, 16, 1.5);
-            light.position.set(0, 5.0, 1.0);
-            lampGroup.add(light);
-
-            scene.add(lampGroup);
-        }
-
-        // Helper to generate 2-3 story buildings with lit windows
-        function createBuilding(x, z, width, depth, stories) {
-            const height = stories * 3.8 + 0.5;
-            const bldgGroup = new THREE.Group();
-            bldgGroup.position.set(x, 0, z);
-
-            const bldgMat = new THREE.MeshStandardMaterial({
-                color: new THREE.Color().setHSL(0.6, 0.15, 0.12 + Math.random() * 0.08),
-                roughness: 0.6
-            });
-
-            // Main Structure
-            const bldgMesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), bldgMat);
-            bldgMesh.position.y = height / 2;
-            bldgGroup.add(bldgMesh);
-
-            // Roof Trim
-            const roofTrim = new THREE.Mesh(new THREE.BoxGeometry(width + 0.3, 0.3, depth + 0.3), darkMat);
-            roofTrim.position.y = height + 0.15;
-            bldgGroup.add(roofTrim);
-
-            // Lit Windows Grid
-            const winGeo = new THREE.PlaneGeometry(0.8, 1.2);
-            for (let story = 0; story < stories; story++) {
-                const winY = 2.2 + story * 3.5;
-                const winsPerRowX = Math.floor((width - 1.5) / 2.0);
-                const winsPerRowZ = Math.floor((depth - 1.5) / 2.0);
-
-                // Front & Back Windows
-                for (let wx = 0; wx < winsPerRowX; wx++) {
-                    const posX = -((winsPerRowX - 1) * 1.0) + wx * 2.0;
-                    if (Math.random() > 0.3) {
-                        const winMat = new THREE.MeshBasicMaterial({ color: windowColors[Math.floor(Math.random() * windowColors.length)] });
-                        
-                        const winFront = new THREE.Mesh(winGeo, winMat);
-                        winFront.position.set(posX, winY, depth / 2 + 0.02);
-                        bldgGroup.add(winFront);
-
-                        const winBack = new THREE.Mesh(winGeo, winMat);
-                        winBack.position.set(posX, winY, -depth / 2 - 0.02);
-                        winBack.rotation.y = Math.PI;
-                        bldgGroup.add(winBack);
-                    }
-                }
-
-                // Side Windows
-                for (let wz = 0; wz < winsPerRowZ; wz++) {
-                    const posZ = -((winsPerRowZ - 1) * 1.0) + wz * 2.0;
-                    if (Math.random() > 0.3) {
-                        const winMat = new THREE.MeshBasicMaterial({ color: windowColors[Math.floor(Math.random() * windowColors.length)] });
-
-                        const winLeft = new THREE.Mesh(winGeo, winMat);
-                        winLeft.position.set(-width / 2 - 0.02, winY, posZ);
-                        winLeft.rotation.y = -Math.PI / 2;
-                        bldgGroup.add(winLeft);
-
-                        const winRight = new THREE.Mesh(winGeo, winMat);
-                        winRight.position.set(width / 2 + 0.02, winY, posZ);
-                        winRight.rotation.y = Math.PI / 2;
-                        bldgGroup.add(winRight);
-                    }
+			// Окна
+			for (let floor = 0; floor < stories; floor++) {
+                for (let windowX = -w / 2 + 1; windowX < w / 2 - 0.5; windowX += 1.8) {
+                    const isLit = Math.random() > 0.45;
+                    const win = new THREE.Mesh(
+                        new THREE.PlaneGeometry(0.8, 1.2),
+                        isLit ? windowLitMat : windowDarkMat
+                    );
+                    win.position.set(x + windowX, floor * storyHeight + 2, z + d / 2 + 0.01);
+                    scene.add(win);
                 }
             }
 
-            scene.add(bldgGroup);
-
-            // Add bounding box collider
-            buildingColliders.push({
-                minX: x - width / 2 - 0.8,
-                maxX: x + width / 2 + 0.8,
-                minZ: z - depth / 2 - 0.8,
-                maxZ: z + depth / 2 + 0.8
+            // Запоминаем для коллизий (AABB)
+            colliders.push({
+                minX: x - w / 2 - 0.9,
+                maxX: x + w / 2 + 0.9,
+                minZ: z - d / 2 - 0.9,
+                maxZ: z + d / 2 + 0.9
             });
         }
 
-        // Build City Blocks
-        for (let bx = 0; bx < blockCount; bx++) {
-            for (let bz = 0; bz < blockCount; bz++) {
-                const blockX = -halfCity + roadWidth / 2 + blockSize / 2 + bx * (blockSize + roadWidth);
-                const blockZ = -halfCity + roadWidth / 2 + blockSize / 2 + bz * (blockSize + roadWidth);
+        // --- СОЗДАНИЕ ВНУТРЕННИХ КВАРТАЛОВ (ЗДАНИЯ 2-3 ЭТАЖА) ---
+        for (let bx = -50; bx <= 50; bx += 35) {
+			for (let bz = -50; bz <= 50; bz += 35) {
+			if (Math.abs(bx) < 15 && Math.abs(bz) < 15) continue; // Оставляем свободный спавн по центру
+                const stories = Math.random() > 0.5 ? 2 : 3;
+                createBuilding(bx, bz, 14, 14, stories);
 
-                // Sidewalk Base
-                const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(blockSize, 0.2, blockSize), sidewalkMat);
-                sidewalk.position.set(blockX, 0.1, blockZ);
+                // Тротуары вокруг зданий
+                const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(18, 0.15, 18), sidewalkMat);
+                sidewalk.position.set(bx, 0.07, bz);
                 scene.add(sidewalk);
-
-                // Street lamps on block corners
-                createStreetLamp(blockX - blockSize / 2 + 1.2, blockZ - blockSize / 2 + 1.2, Math.PI / 4);
-                createStreetLamp(blockX + blockSize / 2 - 1.2, blockZ + blockSize / 2 - 1.2, -Math.PI * 0.75);
-
-                // 2 to 4 buildings per block (2-3 stories tall)
-                const subSize = blockSize / 2 - 2;
-                const offsets = [
-                    [-subSize / 2 - 0.8, -subSize / 2 - 0.8],
-                    [subSize / 2 + 0.8, -subSize / 2 - 0.8],
-                    [-subSize / 2 - 0.8, subSize / 2 + 0.8],
-                    [subSize / 2 + 0.8, subSize / 2 + 0.8]
-                ];
-
-                offsets.forEach(([offX, offZ]) => {
-                    const stories = Math.floor(Math.random() * 2) + 2; // 2 or 3 floors
-                    const bWidth = subSize - Math.random() * 2;
-                    const bDepth = subSize - Math.random() * 2;
-                    createBuilding(blockX + offX, blockZ + offZ, bWidth, bDepth, stories);
-                });
             }
         }
 
-        // 2. Generate Collectible Glowing Coins on Roads
-        const coinGeo = new THREE.CylinderGeometry(0.75, 0.75, 0.2, 16);
-        coinGeo.rotateX(Math.PI / 2);
-        const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1, emissive: 0xffaa00, emissiveIntensity: 0.5 });
+        // --- ВНЕШНИЙ ЗАБОР / ОГРАЖДЕНИЕ ИЗ СТЕН И ДОМОВ ПО ПЕРИМЕТРУ ---
+        const boundLimit = 75;
+        const wallThick = 4;
+        const wallH = 10;
 
-        function spawnCoins() {
-            for (let c = 0; c < 45; c++) {
+        // Северная и Южная стены
+        const wallN = new THREE.Mesh(new THREE.BoxGeometry(citySize, wallH, wallThick), wallMat);
+        wallN.position.set(0, wallH/2, boundLimit);
+        scene.add(wallN);
+        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: boundLimit - 2, maxZ: boundLimit + 5 });
+
+        const wallS = new THREE.Mesh(new THREE.BoxGeometry(citySize, wallH, wallThick), wallMat);
+        wallS.position.set(0, wallH/2, -boundLimit);
+        scene.add(wallS);
+        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: -boundLimit - 5, maxZ: -boundLimit + 2 });
+
+        // Западная и Восточная стены
+        const wallW = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, citySize), wallMat);
+        wallW.position.set(-boundLimit, wallH/2, 0);
+        scene.add(wallW);
+        colliders.push({ minX: -boundLimit - 5, maxX: -boundLimit + 2, minZ: -boundLimit, maxZ: boundLimit });
+
+        const wallE = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, citySize), wallMat);
+        wallE.position.set(boundLimit, wallH/2, 0);
+        scene.add(wallE);
+        colliders.push({ minX: boundLimit - 2, maxX: boundLimit + 5, minZ: -boundLimit, maxZ: boundLimit });
+
+        // Фонарные столбы освещения
+        const lampMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
+        for (let lx = -60; lx <= 60; lx += 30) {
+			for (let lz = -60; lz <= 60; lz += 30) {
+			const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 4.5), darkMat);
+			pole.position.set(lx + 10, 2.25, lz + 10);
+			scene.add(pole);
+
+			const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.3), lampMat);
+			bulb.position.set(lx + 10, 4.5, lz + 10);
+			scene.add(bulb);
+
+			const pLight = new THREE.PointLight(0xffaa33, 0.7, 18);
+			pLight.position.set(lx + 10, 4.3, lz + 10);
+			scene.add(pLight);
+			}
+			}
+
+			// ==========================================
+			//  МОНЕТКИ
+			// ==========================================
+			const coinsList = [];
+			const coinGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.12, 16);
+			coinGeo.rotateX(Math.PI / 2);
+			const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1 });
+
+			function spawnCoins() {
+			for (let i = 0; i < 20; i++) {
                 const coin = new THREE.Mesh(coinGeo, coinMat);
-                const isHorizontal = Math.random() > 0.5;
-                const randomBlock = Math.floor(Math.random() * blockCount);
-                const roadPos = -halfCity + randomBlock * (blockSize + roadWidth);
-                const randomDist = (Math.random() - 0.5) * (citySize - 40);
-
-                if (isHorizontal) {
-                    coin.position.set(randomDist, 0.8, roadPos + (Math.random() - 0.5) * 6);
-                } else {
-                    coin.position.set(roadPos + (Math.random() - 0.5) * 6, 0.8, randomDist);
-                }
-
+                resetCoinPos(coin);
                 scene.add(coin);
-                coinObjects.push(coin);
+                coinsList.push(coin);
             }
+        }
+
+        function resetCoinPos(coin) {
+            coin.position.x = (Math.random() - 0.5) * 120;
+            coin.position.z = (Math.random() - 0.5) * 120;
+            coin.position.y = 0.6;
         }
         spawnCoins();
 
         // ==========================================
-        // HIGH-DETAIL SUPERCAR MODEL
+        //  ОРАНЖЕВЫЙ СУПЕРКАР
         // ==========================================
         const carGroup = new THREE.Group();
-
-        const carPaintMat = new THREE.MeshStandardMaterial({ color: 0xff3b00, metalness: 0.75, roughness: 0.2 });
-        const glassMat = new THREE.MeshStandardMaterial({ color: 0x101525, metalness: 0.9, roughness: 0.1 });
+        const carPaintMat = new THREE.MeshStandardMaterial({ color: 0xff3b00, metalness: 0.7, roughness: 0.2 });
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x151828, metalness: 0.9, roughness: 0.1 });
         const lightHeadMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const lightTailMat = new THREE.MeshBasicMaterial({ color: 0xff0033 });
-        const rimMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, metalness: 0.9, roughness: 0.1 });
+        const rimMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.1 });
 
-        // Wheel Y Center (Radius = 0.36, so Y = 0.36 sits perfectly on ground)
-        const wheelY = 0.36;
+        const wheelY = 0.38;
 
-        // 1. Chassis Body
-        const bodyMain = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.42, 3.6), carPaintMat);
+        const bodyMain = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.45, 3.6), carPaintMat);
         bodyMain.position.set(0, wheelY + 0.1, 0);
         carGroup.add(bodyMain);
 
-        // 2. Sloped Front Hood
-        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.2, 1.25), carPaintMat);
-        hood.position.set(0, wheelY + 0.23, 1.0);
+        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.22, 1.2), carPaintMat);
+        hood.position.set(0, wheelY + 0.24, 1.0);
         hood.rotation.x = 0.08;
         carGroup.add(hood);
 
-        // 3. Cockpit Glass Canopy
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.46, 1.5), glassMat);
-        cabin.position.set(0, wheelY + 0.48, -0.1);
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.48, 1.5), glassMat);
+        cabin.position.set(0, wheelY + 0.5, -0.1);
         carGroup.add(cabin);
 
-        // Roof Sheet
-        const roof = new THREE.Mesh(new THREE.BoxGeometry(1.14, 0.05, 0.9), carPaintMat);
-        roof.position.set(0, wheelY + 0.73, -0.15);
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.06, 0.9), carPaintMat);
+        roof.position.set(0, wheelY + 0.75, -0.15);
         carGroup.add(roof);
 
-        // 4. Front Bumper & Headlights
-        const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.24, 0.3), darkMat);
-        frontBumper.position.set(0, wheelY - 0.02, 1.8);
+        const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.25, 0.3), darkMat);
+        frontBumper.position.set(0, wheelY - 0.03, 1.8);
         carGroup.add(frontBumper);
 
         const lightL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.1), lightHeadMat);
-        lightL.position.set(-0.5, wheelY + 0.16, 1.81);
-        lightL.rotation.y = -0.15;
+        lightL.position.set(-0.5, wheelY + 0.17, 1.81);
         carGroup.add(lightL);
-
         const lightR = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.1), lightHeadMat);
-        lightR.position.set(0.5, wheelY + 0.16, 1.81);
-        lightR.rotation.y = 0.15;
+        lightR.position.set(0.5, wheelY + 0.17, 1.81);
         carGroup.add(lightR);
 
-        // Car Headlight Spotlights (illuminates dark road ahead)
-        const carLightL = new THREE.SpotLight(0xffffff, 2.5, 28, Math.PI / 6, 0.4);
-        carLightL.position.set(-0.5, wheelY + 0.16, 1.85);
-        carLightL.target.position.set(-0.5, 0, 15);
-        carGroup.add(carLightL);
-        carGroup.add(carLightL.target);
-
-        const carLightR = new THREE.SpotLight(0xffffff, 2.5, 28, Math.PI / 6, 0.4);
-        carLightR.position.set(0.5, wheelY + 0.16, 1.85);
-        carLightR.target.position.set(0.5, 0, 15);
-        carGroup.add(carLightR);
-        carGroup.add(carLightR.target);
-
-        // 5. Rear Bumper, Tail Lights & Spoiler
-        const rearBumper = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.28, 0.2), darkMat);
-        rearBumper.position.set(0, wheelY + 0.06, -1.8);
+        const rearBumper = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.3, 0.2), darkMat);
+        rearBumper.position.set(0, wheelY + 0.07, -1.8);
         carGroup.add(rearBumper);
 
         const tailL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.1), lightTailMat);
-        tailL.position.set(-0.45, wheelY + 0.2, -1.86);
+        tailL.position.set(-0.45, wheelY + 0.22, -1.86);
         carGroup.add(tailL);
-
         const tailR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.1), lightTailMat);
-        tailR.position.set(0.45, wheelY + 0.2, -1.86);
+        tailR.position.set(0.45, wheelY + 0.22, -1.86);
         carGroup.add(tailR);
 
         const spoilerWing = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 0.4), darkMat);
-        spoilerWing.position.set(0, wheelY + 0.62, -1.65);
+        spoilerWing.position.set(0, wheelY + 0.64, -1.65);
         carGroup.add(spoilerWing);
 
-        const standL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.24, 0.08), darkMat);
-        standL.position.set(-0.55, wheelY + 0.47, -1.65);
+        const standL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), darkMat);
+        standL.position.set(-0.55, wheelY + 0.49, -1.65);
         carGroup.add(standL);
-
-        const standR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.24, 0.08), darkMat);
-        standR.position.set(0.55, wheelY + 0.47, -1.65);
+        const standR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), darkMat);
+        standR.position.set(0.55, wheelY + 0.49, -1.65);
         carGroup.add(standR);
 
-        // 6. Detailed Wheels (Exact offset prevents body clipping)
-        const tireGeo = new THREE.CylinderGeometry(0.36, 0.36, 0.22, 20);
+        const tireGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.22, 20);
         tireGeo.rotateZ(Math.PI / 2);
 
         function createWheel() {
             const holder = new THREE.Group();
-            const tire = new THREE.Mesh(tireGeo, darkMat);
-            holder.add(tire);
-
+            holder.add(new THREE.Mesh(tireGeo, darkMat));
             const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.23, 10), rimMat);
             rim.rotateZ(Math.PI / 2);
             holder.add(rim);
-
             return holder;
         }
 
-        // Steerable Front Wheels (X = 0.94 avoids clipping)
         const frontLeftWheelPivot = new THREE.Group();
-        frontLeftWheelPivot.position.set(-0.94, wheelY, 1.15);
+        frontLeftWheelPivot.position.set(-0.92, wheelY, 1.15);
         const wheelFL = createWheel();
         frontLeftWheelPivot.add(wheelFL);
         carGroup.add(frontLeftWheelPivot);
 
         const frontRightWheelPivot = new THREE.Group();
-        frontRightWheelPivot.position.set(0.94, wheelY, 1.15);
+        frontRightWheelPivot.position.set(0.92, wheelY, 1.15);
         const wheelFR = createWheel();
         frontRightWheelPivot.add(wheelFR);
         carGroup.add(frontRightWheelPivot);
 
-        // Rear Wheels
         const wheelBL = createWheel();
-        wheelBL.position.set(-0.94, wheelY, -1.15);
+        wheelBL.position.set(-0.92, wheelY, -1.15);
         carGroup.add(wheelBL);
 
         const wheelBR = createWheel();
-        wheelBR.position.set(0.94, wheelY, -1.15);
+        wheelBR.position.set(0.92, wheelY, -1.15);
         carGroup.add(wheelBR);
 
         carGroup.position.set(0, 0, 0);
         scene.add(carGroup);
 
         // ==========================================
-        // CONTROLS & INPUT SYSTEM
+        //  УПРАВЛЕНИЕ И ЛОГИКА
         // ==========================================
         let keyLeft = false;
         let keyRight = false;
@@ -573,20 +340,16 @@
         nitroBtn.addEventListener('pointercancel', () => isNitro = false);
         nitroBtn.addEventListener('pointerleave', () => isNitro = false);
 
-        document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('start-btn').addEventListener('pointerdown', startGame);
+        document.getElementById('pause-btn').addEventListener('pointerdown', returnToMenu);
 
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('gameover-screen').style.display = 'none';
             document.getElementById('ui').style.display = 'block';
+            document.getElementById('pause-btn').style.display = 'block';
             document.getElementById('controls').style.display = 'flex';
             
             score = 0;
-            coins = 0;
-            document.getElementById('score').innerText = '0';
-            document.getElementById('coins-val').innerText = '0';
-
             carGroup.position.set(0, 0, 0);
             carAngle = 0;
             currentTurn = 0;
@@ -597,101 +360,101 @@
             gameActive = true;
         }
 
-        function gameOver() {
+        function returnToMenu() {
             gameActive = false;
             document.getElementById('ui').style.display = 'none';
+            document.getElementById('pause-btn').style.display = 'none';
             document.getElementById('controls').style.display = 'none';
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('final-coins').innerText = coins;
-            document.getElementById('gameover-screen').style.display = 'flex';
-            
-            if (tg?.sendData) {
-                tg.sendData(JSON.stringify({ score: score, coins: coins }));
-            }
+            document.getElementById('start-screen').style.display = 'flex';
+            tg.sendData(JSON.stringify({ score: score, coins: coins }));
         }
 
-        // ==========================================
-        // MAIN GAME LOOP & PHYSICS
-        // ==========================================
+        // Проверка столкновения со зданиями и стенами
+        function checkCollisions(nextX, nextZ) {
+            for (let c of colliders) {
+                if (nextX > c.minX && nextX < c.maxX && nextZ > c.minZ && nextZ < c.maxZ) {
+                    return true; // Врезались в стену или здание
+                }
+            }
+            return false;
+        }
+
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate coins continuously
-            coinObjects.forEach(coin => {
-                if (coin.visible) {
-                    coin.rotation.z += 0.04;
-                }
+            // Анимация вращения монеток
+            coinsList.forEach(coin => {
+                coin.rotation.z += 0.03;
             });
 
             if (gameActive) {
-                // Speed & Acceleration
-                let targetSpeed = isNitro ? baseSpeed * 1.9 : baseSpeed;
-                currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.06);
+                const isLeft = keyLeft || btnLeft;
+                const isRight = keyRight || btnRight;
 
-                // Steering
-                let targetTurn = 0;
-                if (keyLeft || btnLeft) targetTurn = 1;
-                if (keyRight || btnRight) targetTurn = -1;
+                let isReversing = isLeft && isRight; // ЗАДНИЙ ХОД ПРИ НАЖАТИИ ОБОИХ КНОПОК
 
-                currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.1);
+			let targetSpeed = 0;
+			let targetTurn = 0;
 
-                carAngle += currentTurn * 0.038;
-                carGroup.rotation.y = carAngle;
-                carGroup.rotation.z = currentTurn * -0.1; // Body tilt on sharp turns
+			if (isReversing) {
+			targetSpeed = -reverseSpeed;
+			targetTurn = 0; // Прямые колеса при заднем ходе
+			} else {
+			targetSpeed = isNitro ? baseSpeed * 1.9 : baseSpeed;
+			if (isLeft) targetTurn = 1;
+			if (isRight) targetTurn = -1;
+			}
 
-                // Front Wheel Steering Angle
-                let targetWheelRotation = currentTurn * 0.45;
-                frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.15);
-                frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.15);
+			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.08);
+			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.1);
 
-                // Spin Tires
-                wheelFL.rotation.x -= currentSpeed * 2.5;
-                wheelFR.rotation.x -= currentSpeed * 2.5;
-                wheelBL.rotation.x -= currentSpeed * 2.5;
-                wheelBR.rotation.x -= currentSpeed * 2.5;
+			// Поворот угла машины
+			if (Math.abs(currentSpeed) > 0.01) {
+			const dir = currentSpeed > 0 ? 1 : -1;
+			carAngle += currentTurn * 0.035 * dir;
+			}
 
-                // Move Car Position
-                const nextX = carGroup.position.x + Math.sin(carAngle) * currentSpeed;
-                const nextZ = carGroup.position.z + Math.cos(carAngle) * currentSpeed;
+			carGroup.rotation.y = carAngle;
+			carGroup.rotation.z = currentTurn * -0.12;
 
-                // Check Building Collisions
-                let crashed = false;
-                for (let box of buildingColliders) {
-                    if (nextX > box.minX && nextX < box.maxX && nextZ > box.minZ && nextZ < box.maxZ) {
-                        crashed = true;
-                        break;
-                    }
-                }
+			// Рулевые колеса
+			let targetWheelRotation = currentTurn * 0.45;
+			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.15);
+			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.15);
 
-                // Check Arena Bounds Collision
-                if (crashed || Math.abs(nextX) > halfCity + 10 || Math.abs(nextZ) > halfCity + 10) {
-                    gameOver();
-                    return;
-                }
+			// Вращение колес
+			wheelFL.rotation.x -= currentSpeed * 2.5;
+			wheelFR.rotation.x -= currentSpeed * 2.5;
+			wheelBL.rotation.x -= currentSpeed * 2.5;
+			wheelBR.rotation.x -= currentSpeed * 2.5;
 
-                carGroup.position.x = nextX;
-                carGroup.position.z = nextZ;
+			// Проверка следующей позиции на коллизии
+			let nextX = carGroup.position.x + Math.sin(carAngle) * currentSpeed;
+			let nextZ = carGroup.position.z + Math.cos(carAngle) * currentSpeed;
 
-                // Coin Pickups Collision
-                coinObjects.forEach(coin => {
-                    if (coin.visible) {
-                        const dist = carGroup.position.distanceTo(coin.position);
-                        if (dist < 2.2) {
-                            coin.visible = false;
-                            coins += 1;
-                            score += 50;
-                            document.getElementById('coins-val').innerText = coins;
-                        }
+			if (!checkCollisions(nextX, nextZ)) {
+			carGroup.position.x = nextX;
+			carGroup.position.z = nextZ;
+			} else {
+			currentSpeed = 0; // Останавливаем при ударе об стену
+			}
+
+			// Сбор монеток
+			coinsList.forEach(coin => {
+			const dist = carGroup.position.distanceTo(coin.position);
+			if (dist < 1.8) {
+                        coins += 1;
+                        document.getElementById('coins').innerText = coins;
+                        resetCoinPos(coin);
                     }
                 });
 
-                // Update Score
                 score += 1;
                 document.getElementById('score').innerText = score;
 
-                // Smooth Camera Follow Dynamics
+                // Слежение камеры за машиной
                 const camDist = 8.5;
-                const camHeight = 3.6;
+                const camHeight = 3.5;
                 let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
                 let targetCamZ = carGroup.position.z - Math.cos(carAngle) * camDist;
 
@@ -699,14 +462,13 @@
                 camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.1);
                 camera.position.y = carGroup.position.y + camHeight;
                 
-                camera.lookAt(carGroup.position.x, carGroup.position.y + 0.6, carGroup.position.z);
+                camera.lookAt(carGroup.position.x, carGroup.position.y + 0.5, carGroup.position.z);
             }
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // Responsive Window Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
