@@ -23,12 +23,12 @@
 	<body>
 		<div id="start-screen" class="screen">
 			<h1>CYBER ARENA</h1>
-			<p>Исследуй квадратный ночной город, уворачивайся от стен!</p>
+			<p>Свободная езда по ночной площадке!</p>
 			<button class="menu-btn" id="start-btn">СТАРТ</button>
 		</div>
 
 		<div id="gameover-screen" class="screen" style="display: none;">
-			<h1>АВАРИЯ!</h1>
+			<h1>ЗАЕЗД ОКОНЧЕН</h1>
 			<p>
 				Счет: <span id="final-score">0</span>
 			</p>
@@ -55,11 +55,12 @@
 			let speed = 0.4;
 			let isNitro = false;
 			let gameActive = false;
-			let carAngle = 0; // Направление движения машины
+			let carAngle = 0;
+			let turnDirection = 0;
 
 			const scene = new THREE.Scene();
 			scene.background = new THREE.Color(0x050510);
-			scene.fog = new THREE.FogExp2(0x050510, 0.03);
+			scene.fog = new THREE.FogExp2(0x050510, 0.02);
 
 			const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 			const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -71,141 +72,129 @@
 			dirLight.position.set(10, 20, -10);
 			scene.add(dirLight);
 
-			// Квадратная сетка дорог и кварталы города
-			const citySize = 100;
+			// Большая чистая площадка (дорожное покрытие)
+			const arenaSize = 150;
 			const ground = new THREE.Mesh(
-			new THREE.PlaneGeometry(citySize, citySize),
+			new THREE.PlaneGeometry(arenaSize, arenaSize),
 			new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.9 })
 			);
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
 
-			// Генерация зданий внутри квадратного города
-			const buildingMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.7 });
-			for (let x = -40; x <= 40; x += 20) {
-			for (let z = -40; z <= 40; z += 20) {
-			if (Math.abs(x) < 10 && Math.abs(z) < 10) continue; // Оставляем центр свободным
-                const bHeight = 15 + Math.random() * 25;
-                const building = new THREE.Mesh(new THREE.BoxGeometry(12, bHeight, 12), buildingMat);
-                building.position.set(x, bHeight / 2, z);
-                scene.add(building);
-            }
-        }
+			// Машина-спорткар
+			const carGroup = new THREE.Group();
 
-        // Машина-спорткар
-        const carGroup = new THREE.Group();
-        
-        const body = new THREE.Mesh(
-            new THREE.BoxGeometry(1.6, 0.5, 3.5),
-            new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.8, roughness: 0.2 })
-        );
-        body.position.y = 0.25;
-        carGroup.add(body);
+			const body = new THREE.Mesh(
+			new THREE.BoxGeometry(1.6, 0.5, 3.5),
+			new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.8, roughness: 0.2 })
+			);
+			body.position.y = 0.25;
+			carGroup.add(body);
 
-        const cabin = new THREE.Mesh(
-            new THREE.BoxGeometry(1.2, 0.4, 1.8),
-            new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1 })
-        );
-        cabin.position.set(0, 0.65, -0.2);
-        carGroup.add(cabin);
+			const cabin = new THREE.Mesh(
+			new THREE.BoxGeometry(1.2, 0.4, 1.8),
+			new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1 })
+			);
+			cabin.position.set(0, 0.65, -0.2);
+			carGroup.add(cabin);
 
-        const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-        const lightLeft = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.1), lightMat);
-        lightLeft.position.set(-0.5, 0.3, 1.76);
-        carGroup.add(lightLeft);
+			const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+			const lightLeft = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.1), lightMat);
+			lightLeft.position.set(-0.5, 0.3, 1.76);
+			carGroup.add(lightLeft);
 
-        const lightRight = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.1), lightMat);
-        lightRight.position.set(0.5, 0.3, 1.76);
-        carGroup.add(lightRight);
+			const lightRight = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.1), lightMat);
+			lightRight.position.set(0.5, 0.3, 1.76);
+			carGroup.add(lightRight);
 
-        carGroup.position.set(0, 0, 0);
-        scene.add(carGroup);
+			carGroup.position.set(0, 0, 0);
+			scene.add(carGroup);
 
-        // Управление (поворот руля)
-        let turnDirection = 0; // -1 влево, 1 вправо, 0 прямо
+			// Управление поворотами (исправленные обработчики)
+			const leftBtn = document.getElementById('left');
+			const rightBtn = document.getElementById('right');
+			const nitroBtn = document.getElementById('nitro');
 
-        const leftBtn = document.getElementById('left');
-        const rightBtn = document.getElementById('right');
-        const nitroBtn = document.getElementById('nitro');
+			// Левая кнопка: поворот в одну сторону
+			leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); turnDirection = 1; });
+			leftBtn.addEventListener('pointerup', () => turnDirection = 0);
+			leftBtn.addEventListener('pointerleave', () => turnDirection = 0);
 
-        leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); turnDirection = 1; });
-        leftBtn.addEventListener('pointerup', () => turnDirection = 0);
-        leftBtn.addEventListener('pointerleave', () => turnDirection = 0);
+			// Правая кнопка: поворот в другую сторону
+			rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); turnDirection = -1; });
+			rightBtn.addEventListener('pointerup', () => turnDirection = 0);
+			rightBtn.addEventListener('pointerleave', () => turnDirection = 0);
 
-        rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); turnDirection = -1; });
-        rightBtn.addEventListener('pointerup', () => turnDirection = 0);
-        rightBtn.addEventListener('pointerleave', () => turnDirection = 0);
+			nitroBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isNitro = true; });
+			nitroBtn.addEventListener('pointerup', () => isNitro = false);
+			nitroBtn.addEventListener('pointerleave', () => isNitro = false);
 
-        nitroBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isNitro = true; });
-        nitroBtn.addEventListener('pointerup', () => isNitro = false);
-        nitroBtn.addEventListener('pointerleave', () => isNitro = false);
+			document.getElementById('start-btn').addEventListener('pointerdown', startGame);
+			document.getElementById('restart-btn').addEventListener('pointerdown', startGame);
 
-        document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('restart-btn').addEventListener('click', startGame);
+			function startGame() {
+			document.getElementById('start-screen').style.display = 'none';
+			document.getElementById('gameover-screen').style.display = 'none';
+			document.getElementById('ui').style.display = 'block';
+			document.getElementById('controls').style.display = 'flex';
 
-        function startGame() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('gameover-screen').style.display = 'none';
-            document.getElementById('ui').style.display = 'block';
-            document.getElementById('controls').style.display = 'flex';
-            
-            score = 0;
-            carGroup.position.set(0, 0, 0);
-            carAngle = 0;
-            gameActive = true;
-        }
+			score = 0;
+			carGroup.position.set(0, 0, 0);
+			carAngle = 0;
+			turnDirection = 0;
+			gameActive = true;
+			}
 
-        function gameOver() {
-            gameActive = false;
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('controls').style.display = 'none';
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('gameover-screen').style.display = 'flex';
-            tg.sendData(JSON.stringify({ score: score, coins: coins }));
-        }
+			function gameOver() {
+			gameActive = false;
+			document.getElementById('ui').style.display = 'none';
+			document.getElementById('controls').style.display = 'none';
+			document.getElementById('final-score').innerText = score;
+			document.getElementById('gameover-screen').style.display = 'flex';
+			tg.sendData(JSON.stringify({ score: score, coins: coins }));
+			}
 
-        // Игровой цикл для арены
-        function animate() {
-            requestAnimationFrame(animate);
+			function animate() {
+			requestAnimationFrame(animate);
 
-            if (gameActive) {
-                let currentSpeed = isNitro ? speed * 2.2 : speed;
+			if (gameActive) {
+			let currentSpeed = isNitro ? speed * 2.2 : speed;
 
-                // Поворот машины
-                carAngle += turnDirection * 0.03;
-                carGroup.rotation.y = carAngle;
-                carGroup.rotation.z = turnDirection * -0.15; // Наклон при повороте
+			// Изменяем угол поворота машины при зажатии кнопок
+			carAngle += turnDirection * 0.04;
+			carGroup.rotation.y = carAngle;
+			carGroup.rotation.z = turnDirection * -0.15; // Наклон машины вбок
 
-                // Движение вперед по текущему направлению
-                carGroup.position.x += Math.sin(carAngle) * currentSpeed;
-                carGroup.position.z += Math.cos(carAngle) * currentSpeed;
+			// Едем вперед по направлению взгляда машины
+			carGroup.position.x += Math.sin(carAngle) * currentSpeed;
+			carGroup.position.z += Math.cos(carAngle) * currentSpeed;
 
-                score += 1;
-                document.getElementById('score').innerText = score;
+			score += 1;
+			document.getElementById('score').innerText = score;
 
-                // Проверка границ города (если уедет за пределы квадратной арены 45x45)
-                if (Math.abs(carGroup.position.x) > 46 || Math.abs(carGroup.position.z) > 46) {
-                    gameOver();
-                }
+			// Проверка границ площадки (если уедет слишком далеко от центра)
+			if (Math.abs(carGroup.position.x) > 70 || Math.abs(carGroup.position.z) > 70) {
+			gameOver();
+			}
 
-                // Плавная камера сзади машины
-                const camDist = 8;
-                const camHeight = 3.5;
-                camera.position.x = carGroup.position.x - Math.sin(carAngle) * camDist;
-                camera.position.z = carGroup.position.z - Math.cos(carAngle) * camDist;
-                camera.position.y = carGroup.position.y + camHeight;
-                camera.lookAt(carGroup.position.x, carGroup.position.y + 0.5, carGroup.position.z);
-            }
+			// Плавная камера сзади машины
+			const camDist = 8;
+			const camHeight = 3.5;
+			camera.position.x = carGroup.position.x - Math.sin(carAngle) * camDist;
+			camera.position.z = carGroup.position.z - Math.cos(carAngle) * camDist;
+			camera.position.y = carGroup.position.y + camHeight;
+			camera.lookAt(carGroup.position.x, carGroup.position.y + 0.5, carGroup.position.z);
+			}
 
-            renderer.render(scene, camera);
-        }
-        animate();
+			renderer.render(scene, camera);
+			}
+			animate();
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+			window.addEventListener('resize', () => {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			});
 		</script>
 	</body>
 </html>
