@@ -62,16 +62,16 @@
 
 			const scene = new THREE.Scene();
 			scene.background = new THREE.Color(0x050510);
-			scene.fog = new THREE.FogExp2(0x050510, 0.012);
+			scene.fog = new THREE.FogExp2(0x050510, 0.01);
 
-			const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+			const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
 			const renderer = new THREE.WebGLRenderer({ antialias: true });
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			document.body.appendChild(renderer.domElement);
 
-			scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-			const dirLight = new THREE.DirectionalLight(0xffaa00, 0.8);
-			dirLight.position.set(20, 40, -20);
+			scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+			const dirLight = new THREE.DirectionalLight(0xffaa00, 0.9);
+			dirLight.position.set(30, 50, -30);
 			scene.add(dirLight);
 
 			// ==========================================
@@ -85,7 +85,7 @@
 			const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x282832, roughness: 0.6 });
 			const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-			const mapSize = 170;
+			const mapSize = 200;
 			const ground = new THREE.Mesh(new THREE.PlaneGeometry(mapSize, mapSize), roadMat);
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
@@ -119,52 +119,58 @@
             });
         }
 
-        // --- СЕТКА 4х4 КВАРТАЛОВ ---
-        const gridXCoords = [-51, -17, 17, 51];
-        const gridZCoords = [-51, -17, 17, 51];
+        // --- 1. ВНУТРЕННИЕ КВАРТАЛЫ (СЕТКА 4х4) ---
+        // Шаг между центрами кварталов = 34 единицы, ширина квартала = 20
+        // Проезжая часть = 14 единиц (широкие 2-полосные дороги везде)
+        const gridCoords = [-51, -17, 17, 51];
 
-        gridXCoords.forEach(bx => {
-            gridZCoords.forEach(bz => {
+        gridCoords.forEach(bx => {
+            gridCoords.forEach(bz => {
                 const stories = Math.random() > 0.5 ? 2 : 3;
                 createBuilding(bx, bz, 20, 20, stories);
 
-                const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(24, 0.08, 24), sidewalkMat);
+                const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(23, 0.08, 23), sidewalkMat);
                 sidewalk.position.set(bx, 0.04, bz);
                 scene.add(sidewalk);
             });
         });
 
-        // Аккуратные разделительные линии по центру дорог между кварталами
-        [-34, 0, 34].forEach(coord => {
-            const lineZ = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.09, mapSize - 20), lineMat);
+        // --- 2. ВНЕШНИЙ ПЕРИМЕТР (ПОЛНОЦЕННЫЕ ЗДАНИЯ ВОКРУГ КАРТЫ) ---
+        const outerLimit = 85;
+        const outerBlockWidth = 20;
+
+        // Здания по внешнему северу и югу
+        gridCoords.forEach(bx => {
+            createBuilding(bx, outerLimit, outerBlockWidth, outerBlockWidth, 3);
+            createBuilding(bx, -outerLimit, outerBlockWidth, outerBlockWidth, 3);
+        });
+        // Здания по внешнему западу и востоку
+        gridCoords.forEach(bz => {
+            createBuilding(-outerLimit, bz, outerBlockWidth, outerBlockWidth, 3);
+            createBuilding(outerLimit, bz, outerBlockWidth, outerBlockWidth, 3);
+        });
+        // Угловые внешние здания
+        createBuilding(-outerLimit, outerLimit, outerBlockWidth, outerBlockWidth, 3);
+        createBuilding(outerLimit, outerLimit, outerBlockWidth, outerBlockWidth, 3);
+        createBuilding(-outerLimit, -outerLimit, outerBlockWidth, outerBlockWidth, 3);
+        createBuilding(outerLimit, -outerLimit, outerBlockWidth, outerBlockWidth, 3);
+
+        // --- 3. РАЗДЕЛИТЕЛЬНЫЕ ПОЛОСЫ ПО ЦЕНТРУ ВСЕХ ДОРОГ ---
+        const lineCoords = [-68, -34, 0, 34, 68];
+        lineCoords.forEach(coord => {
+            const lineZ = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.09, 160), lineMat);
             lineZ.position.set(coord, 0.045, 0);
             scene.add(lineZ);
 
-            const lineX = new THREE.Mesh(new THREE.BoxGeometry(mapSize - 20, 0.09, 0.3), lineMat);
+            const lineX = new THREE.Mesh(new THREE.BoxGeometry(160, 0.09, 0.3), lineMat);
             lineX.position.set(0, 0.045, coord);
             scene.add(lineX);
         });
 
-        // --- ВНЕШНИЙ ПЕРИМЕТР ---
-        const borderLimit = 75;
-        const outerWallThick = 12;
-
-        createBuilding(0, borderLimit, mapSize, outerWallThick, 3);
-        colliders.push({ minX: -mapSize/2, maxX: mapSize/2, minZ: borderLimit - outerWallThick/2, maxZ: borderLimit + outerWallThick });
-
-        createBuilding(0, -borderLimit, mapSize, outerWallThick, 3);
-        colliders.push({ minX: -mapSize/2, maxX: mapSize/2, minZ: -borderLimit - outerWallThick, maxZ: -borderLimit + outerWallThick/2 });
-
-        createBuilding(-borderLimit, 0, outerWallThick, mapSize, 3);
-        colliders.push({ minX: -borderLimit - outerWallThick, maxX: -borderLimit + outerWallThick/2, minZ: -mapSize/2, maxZ: mapSize/2 });
-
-        createBuilding(borderLimit, 0, outerWallThick, mapSize, 3);
-        colliders.push({ minX: borderLimit - outerWallThick/2, maxX: borderLimit + outerWallThick, minZ: -mapSize/2, maxZ: mapSize/2 });
-
-        // Фонари
+        // Фонарные столбы на перекрестках
         const lampMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
-        [-34, 0, 34].forEach(lx => {
-            [-34, 0, 34].forEach(lz => {
+        lineCoords.forEach(lx => {
+            lineCoords.forEach(lz => {
                 const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 4.5), darkMat);
                 pole.position.set(lx, 2.25, lz);
                 scene.add(pole);
@@ -186,7 +192,7 @@
         const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1 });
 
         function spawnCoins() {
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 25; i++) {
                 const coin = new THREE.Mesh(coinGeo, coinMat);
                 resetCoinPos(coin);
                 scene.add(coin);
@@ -195,8 +201,8 @@
         }
 
         function resetCoinPos(coin) {
-            coin.position.x = (Math.random() - 0.5) * 120;
-            coin.position.z = (Math.random() - 0.5) * 120;
+            coin.position.x = (Math.random() - 0.5) * 130;
+            coin.position.z = (Math.random() - 0.5) * 130;
             coin.position.y = 0.6;
         }
         spawnCoins();
@@ -478,9 +484,9 @@
                 score += 1;
                 document.getElementById('score').innerText = score;
 
-                // --- КАМЕРА ВЫСОКО СВЕРХУ ПОД УГЛОМ ОКОЛО 80 ГРАДУСОВ ---
-                const camDist = 5.5;   // Ближе к машине по горизонтали
-                const camHeight = 11.0; // Очень высоко вверх
+                // --- КАМЕРА ОТДАЛЕНА И НАКЛОНЕНА ПОД 70 ГРАДУСОВ С ОБЗОРОМ КРЫШ И ДОМОВ ---
+                const camDist = 14.0;  // Отдаление сзади
+                const camHeight = 15.0; // Высота подъема для угла 70 градусов
                 let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
                 let targetCamZ = carGroup.position.z - Math.cos(carAngle) * camDist;
 
@@ -488,7 +494,7 @@
                 camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.1);
                 camera.position.y = carGroup.position.y + camHeight;
                 
-                camera.lookAt(carGroup.position.x, carGroup.position.y, carGroup.position.z);
+                camera.lookAt(carGroup.position.x, carGroup.position.y + 0.8, carGroup.position.z);
             }
 
             renderer.render(scene, camera);
