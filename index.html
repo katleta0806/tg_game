@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-				<title>3D City Racing - Open Arena</title>
+				<title>CITY RACER 3D</title>
 				<script src="https://telegram.org/js/telegram-web-app.js"></script>
 				<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 				<style>
@@ -14,18 +14,19 @@
 					#nitro { background: rgba(255, 69, 0, 0.4); border-color: orange; }
 
 					.screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 16, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; color: #fff; text-align: center; }
-					.menu-btn { padding: 15px 40px; background: #ff0055; border: none; border-radius: 30px; color: #fff; font-size: 20px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 0 15px rgba(255,0,85,0.5); }
+					.menu-btn { padding: 15px 40px; background: #ff4500; border: none; border-radius: 30px; color: #fff; font-size: 20px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 0 15px rgba(255,69,0,0.6); }
 					.menu-btn:active { transform: scale(0.95); }
-					h1 { margin: 0 0 10px 0; font-size: 32px; text-shadow: 0 0 10px #ff0055; }
-					p { color: #aaa; font-size: 16px; }
+					h1 { margin: 0 0 5px 0; font-size: 34px; letter-spacing: 2px; color: #ff4500; text-shadow: 0 0 12px rgba(255,69,0,0.8); }
+					p { color: #aaa; font-size: 15px; }
+					.author { margin-top: 15px; font-size: 12px; color: #00ffff; letter-spacing: 3px; text-transform: uppercase; }
 				</style>
 			</head>
 	<body>
 		<div id="start-screen" class="screen">
-			<h1>CYBER ARENA</h1>
-			<p>Плавный круиз на спорткаре!</p>
-			<p style="font-size: 14px; color: #ff0055;">Управление: A / D или Стрелки (Пробел — Нитро)</p>
+			<h1>CITY RACER 3D</h1>
+			<p>Управление: A / D или Стрелки (Пробел — Нитро)</p>
 			<button class="menu-btn" id="start-btn">СТАРТ</button>
+			<div class="author">BY KATLETA0806</div>
 		</div>
 
 		<div id="gameover-screen" class="screen" style="display: none;">
@@ -53,12 +54,12 @@
 
 			let score = 0;
 			let coins = 0;
-			let baseSpeed = 0.25; // Снизили базовую скорость для плавности
+			let baseSpeed = 0.25;
 			let currentSpeed = 0.25;
 			let isNitro = false;
 			let gameActive = false;
 			let carAngle = 0;
-			let currentTurn = 0; // Плавное значение поворота
+			let currentTurn = 0;
 
 			const scene = new THREE.Scene();
 			scene.background = new THREE.Color(0x050510);
@@ -69,9 +70,9 @@
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			document.body.appendChild(renderer.domElement);
 
-			scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-			const dirLight = new THREE.DirectionalLight(0x00ffff, 0.8);
-			dirLight.position.set(10, 20, -10);
+			scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+			const dirLight = new THREE.DirectionalLight(0xffaa00, 1.0);
+			dirLight.position.set(15, 25, -15);
 			scene.add(dirLight);
 
 			// Площадка
@@ -83,68 +84,117 @@
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
 
-			// Детализированная модель машины
+			// ==========================================
+			//  СОЗДАНИЕ ОРАНЖЕВОГО ГИПЕРКАРА (LAMBORGHINI)
+			// ==========================================
 			const carGroup = new THREE.Group();
 
-			const body = new THREE.Mesh(
-			new THREE.BoxGeometry(1.6, 0.4, 3.6),
-			new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.8, roughness: 0.2 })
+			// Яркий оранжевый металлик
+			const carPaintMat = new THREE.MeshStandardMaterial({ color: 0xff3b00, metalness: 0.8, roughness: 0.2 });
+			const darkMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.4 });
+			const glassMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.9, roughness: 0.1 });
+			const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+			// Клиновидный нос (Капот + Бампер)
+			const hoodGeo = new THREE.ConeGeometry(1.0, 1.8, 4);
+			hoodGeo.rotateX(Math.PI / 2);
+			hoodGeo.scale(1.8, 0.35, 1.2);
+			const hood = new THREE.Mesh(hoodGeo, carPaintMat);
+			hood.position.set(0, 0.3, 1.1);
+			carGroup.add(hood);
+
+			// Центральная часть кузова
+			const mainBody = new THREE.Mesh(
+			new THREE.BoxGeometry(1.8, 0.45, 2.2),
+			carPaintMat
 			);
-			body.position.y = 0.3;
-			carGroup.add(body);
+			mainBody.position.set(0, 0.35, -0.2);
+			carGroup.add(mainBody);
 
-			const cabin = new THREE.Mesh(
-			new THREE.BoxGeometry(1.3, 0.4, 1.8),
-			new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.1, metalness: 0.5 })
+			// Черный агрессивный передний воздухозаборник
+			const intake = new THREE.Mesh(
+			new THREE.BoxGeometry(1.5, 0.2, 0.3),
+			darkMat
 			);
-			cabin.position.set(0, 0.7, -0.2);
-			carGroup.add(cabin);
+			intake.position.set(0, 0.2, 1.85);
+			carGroup.add(intake);
 
-			const spoiler = new THREE.Mesh(
-			new THREE.BoxGeometry(1.5, 0.08, 0.5),
-			new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9 })
-			);
-			spoiler.position.set(0, 0.75, -1.6);
-			carGroup.add(spoiler);
+			// Наклонное лобовое стекло и низкая крыша (Кабина)
+			const cabinGeo = new THREE.BufferGeometry();
+			// Пирамидальная форма кабины спорткара
+			const cabinVertices = new Float32Array([
+			// Лобовое + Крыша
+			-0.7, 0.45, 0.6,    0.7, 0.45, 0.6,   -0.55, 0.78, 0.0,
+			0.7, 0.45, 0.6,    0.55, 0.78, 0.0,  -0.55, 0.78, 0.0,
+			// Крыша + Заднее стекло
+			-0.55, 0.78, 0.0,   0.55, 0.78, 0.0,  -0.65, 0.5, -0.9,
+			0.55, 0.78, 0.0,   0.65, 0.5, -0.9,  -0.65, 0.5, -0.9,
+			// Бока
+			-0.7, 0.45, 0.6,   -0.55, 0.78, 0.0,  -0.65, 0.5, -0.9,
+			0.7, 0.45, 0.6,    0.65, 0.5, -0.9,   0.55, 0.78, 0.0
+			]);
+			cabinGeo.setAttribute('position', new THREE.BufferAttribute(cabinVertices, 3));
+			cabinGeo.computeVertexNormals();
+			const cabinMesh = new THREE.Mesh(cabinGeo, glassMat);
+			carGroup.add(cabinMesh);
 
-			const spoilerStandMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-			const standLeft = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.1), spoilerStandMat);
-			standLeft.position.set(-0.6, 0.6, -1.6);
-			carGroup.add(standLeft);
-			const standRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.1), spoilerStandMat);
-			standRight.position.set(0.6, 0.6, -1.6);
-			carGroup.add(standRight);
+			// Боковые воздухозаборники
+			const sideIntakeL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.7), darkMat);
+			sideIntakeL.position.set(-0.92, 0.38, -0.4);
+			carGroup.add(sideIntakeL);
 
-			const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-			const lightLeft = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.1), lightMat);
-			lightLeft.position.set(-0.5, 0.3, 1.81);
-			carGroup.add(lightLeft);
-			const lightRight = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.1), lightMat);
-			lightRight.position.set(0.5, 0.3, 1.81);
-			carGroup.add(lightRight);
+			const sideIntakeR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.7), darkMat);
+			sideIntakeR.position.set(0.92, 0.38, -0.4);
+			carGroup.add(sideIntakeR);
 
-			const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 16);
-			wheelGeo.rotateZ(Math.PI / 2);
-			const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+			// Тонкие узкие светодиодные фары
+			const headLightL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.2), lightMat);
+			headLightL.position.set(-0.55, 0.35, 1.7);
+			headLightL.rotation.y = -0.3;
+			carGroup.add(headLightL);
 
+			const headLightR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.2), lightMat);
+			headLightR.position.set(0.55, 0.35, 1.7);
+			headLightR.rotation.y = 0.3;
+			carGroup.add(headLightR);
+
+			// Спортивные колеса (Низкопрофильная резина + тонкие диски)
+			const tireGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.22, 20);
+			tireGeo.rotateZ(Math.PI / 2);
+			const rimGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.23, 10);
+			rimGeo.rotateZ(Math.PI / 2);
+
+			const rimMat = new THREE.MeshStandardMaterial({ color: 0x888899, metalness: 0.9, roughness: 0.1 });
+
+			function createWheel() {
+			const wheelHolder = new THREE.Group();
+			const tire = new THREE.Mesh(tireGeo, darkMat);
+			const rim = new THREE.Mesh(rimGeo, rimMat);
+			wheelHolder.add(tire);
+			wheelHolder.add(rim);
+			return wheelHolder;
+			}
+
+			// Передние поворотные колеса
 			const frontLeftWheelPivot = new THREE.Group();
-			frontLeftWheelPivot.position.set(-0.9, 0.25, 1.2);
-			const wheelFL = new THREE.Mesh(wheelGeo, wheelMat);
+			frontLeftWheelPivot.position.set(-0.95, 0.28, 1.15);
+			const wheelFL = createWheel();
 			frontLeftWheelPivot.add(wheelFL);
 			carGroup.add(frontLeftWheelPivot);
 
 			const frontRightWheelPivot = new THREE.Group();
-			frontRightWheelPivot.position.set(0.9, 0.25, 1.2);
-			const wheelFR = new THREE.Mesh(wheelGeo, wheelMat);
+			frontRightWheelPivot.position.set(0.95, 0.28, 1.15);
+			const wheelFR = createWheel();
 			frontRightWheelPivot.add(wheelFR);
 			carGroup.add(frontRightWheelPivot);
 
-			const wheelBL = new THREE.Mesh(wheelGeo, wheelMat);
-			wheelBL.position.set(-0.9, 0.25, -1.2);
+			// Задние колеса
+			const wheelBL = createWheel();
+			wheelBL.position.set(-0.95, 0.28, -1.1);
 			carGroup.add(wheelBL);
 
-			const wheelBR = new THREE.Mesh(wheelGeo, wheelMat);
-			wheelBR.position.set(0.9, 0.25, -1.2);
+			const wheelBR = createWheel();
+			wheelBR.position.set(0.95, 0.28, -1.1);
 			carGroup.add(wheelBR);
 
 			carGroup.position.set(0, 0, 0);
@@ -220,46 +270,38 @@
 			requestAnimationFrame(animate);
 
 			if (gameActive) {
-			// Плавное ускорение и нитро
 			let targetSpeed = isNitro ? baseSpeed * 2.0 : baseSpeed;
 			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.05);
 
-			// Желаемое направление поворота (-1, 0 или 1)
 			let targetTurn = 0;
 			if (keyLeft || btnLeft) targetTurn = 1;
 			if (keyRight || btnRight) targetTurn = -1;
 
-			// Плавное изменение поворота руля (инерция)
 			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.1);
 
 			carAngle += currentTurn * 0.035;
 			carGroup.rotation.y = carAngle;
-			carGroup.rotation.z = currentTurn * -0.12; // Мягкий наклон кузова
+			carGroup.rotation.z = currentTurn * -0.12;
 
-			// Плавный поворот передних колес
 			let targetWheelRotation = currentTurn * 0.5;
 			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.15);
 			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.15);
 
-			// Вращение колес по ходу движения
 			wheelFL.rotation.x -= currentSpeed * 2.5;
 			wheelFR.rotation.x -= currentSpeed * 2.5;
 			wheelBL.rotation.x -= currentSpeed * 2.5;
 			wheelBR.rotation.x -= currentSpeed * 2.5;
 
-			// Движение вперед
 			carGroup.position.x += Math.sin(carAngle) * currentSpeed;
 			carGroup.position.z += Math.cos(carAngle) * currentSpeed;
 
 			score += 1;
 			document.getElementById('score').innerText = score;
 
-			// Границы площадки
 			if (Math.abs(carGroup.position.x) > 70 || Math.abs(carGroup.position.z) > 70) {
 			gameOver();
 			}
 
-			// Плавная камера (следует с небольшой инерцией)
 			const camDist = 8.5;
 			const camHeight = 3.5;
 			let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
