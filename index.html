@@ -89,7 +89,6 @@
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
 
-			// Список хитбоксов строений
 			const colliders = [];
 
 			function createBuilding(x, z, w, d, stories) {
@@ -99,7 +98,6 @@
 			bMesh.position.set(x, h / 2, z);
 			scene.add(bMesh);
 
-			// Окна
 			for (let floor = 0; floor < stories; floor++) {
                 for (let windowX = -w / 2 + 1; windowX < w / 2 - 0.5; windowX += 1.8) {
                     const isLit = Math.random() > 0.45;
@@ -112,7 +110,6 @@
                 }
             }
 
-            // Границы самого дома
             colliders.push({
                 minX: x - w / 2,
                 maxX: x + w / 2,
@@ -121,7 +118,6 @@
             });
         }
 
-        // --- СОЗДАНИЕ ВНУТРЕННИХ КВАРТАЛОВ ---
         for (let bx = -50; bx <= 50; bx += 35) {
 			for (let bz = -50; bz <= 50; bz += 35) {
 			if (Math.abs(bx) < 15 && Math.abs(bz) < 15) continue;
@@ -134,7 +130,6 @@
             }
         }
 
-        // --- СТЕНЫ ПО ПЕРИМЕТРУ ---
         const boundLimit = 75;
         const wallThick = 4;
         const wallH = 10;
@@ -159,7 +154,6 @@
         scene.add(wallE);
         colliders.push({ minX: boundLimit - wallThick/2, maxX: boundLimit + 10, minZ: -boundLimit, maxZ: boundLimit });
 
-        // Фонарные столбы
         const lampMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
         for (let lx = -60; lx <= 60; lx += 30) {
 			for (let lz = -60; lz <= 60; lz += 30) {
@@ -177,7 +171,6 @@
 			}
 			}
 
-			// Монетки
 			const coinsList = [];
 			const coinGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.12, 16);
 			coinGeo.rotateX(Math.PI / 2);
@@ -299,7 +292,7 @@
         scene.add(carGroup);
 
         // ==========================================
-        //  УПРАВЛЕНИЕ И ЛОГИКА
+        //  УПРАВЛЕНИЕ И УЛУЧШЕННАЯ ФИЗИКА КОЛЛИЗИЙ
         // ==========================================
         let keyLeft = false;
         let keyRight = false;
@@ -367,26 +360,25 @@
             tg.sendData(JSON.stringify({ score: score, coins: coins }));
         }
 
-        // ТОЧНАЯ ПРОВЕРКА КОЛЛИЗИИ ВСЕХ 4 УГЛОВ КУЗОВА С УЧЕТОМ УГЛА ПОВОРОТА (OBB)
-        function checkCollisions(nextX, nextZ, angle) {
-            const halfW = 1.0; // Ширина машины с колесами
-            const halfL = 1.9; // Длина машины с бамперами
+        // Проверка столкновения 4 углов машины
+        function isPositionColliding(posX, posZ, angle) {
+            const halfW = 0.95; 
+            const halfL = 1.85; 
 
-            // Расчет 4 углов кузова машины в мировых координатах
             const cos = Math.cos(angle);
             const sin = Math.sin(angle);
 
             const corners = [
-                { x: nextX + ( sin * halfL + cos * halfW), z: nextZ + ( cos * halfL - sin * halfW) }, // Передний правый
-                { x: nextX + ( sin * halfL - cos * halfW), z: nextZ + ( cos * halfL + sin * halfW) }, // Передний левый
-                { x: nextX + (-sin * halfL + cos * halfW), z: nextZ + (-cos * halfL - sin * halfW) }, // Задний правый
-                { x: nextX + (-sin * halfL - cos * halfW), z: nextZ + (-cos * halfL + sin * halfW) }  // Задний левый
+                { x: posX + ( sin * halfL + cos * halfW), z: posZ + ( cos * halfL - sin * halfW) },
+                { x: posX + ( sin * halfL - cos * halfW), z: posZ + ( cos * halfL + sin * halfW) },
+                { x: posX + (-sin * halfL + cos * halfW), z: posZ + (-cos * halfL - sin * halfW) },
+                { x: posX + (-sin * halfL - cos * halfW), z: posZ + (-cos * halfL + sin * halfW) }
             ];
 
             for (let c of colliders) {
                 for (let p of corners) {
                     if (p.x >= c.minX && p.x <= c.maxX && p.z >= c.minZ && p.z <= c.maxZ) {
-			return true; // Какой-то из углов машины коснулся здания
+			return true;
 			}
 			}
 			}
@@ -418,31 +410,51 @@
 			if (isRight) targetTurn = -1;
 			}
 
-			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.015);
-			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.07);
+			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.02);
+			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.08);
 
-			let nextAngle = carAngle;
-			if (Math.abs(currentSpeed) > 0.005) {
-			const dir = currentSpeed > 0 ? 1 : -1;
-			nextAngle += currentTurn * 0.022 * dir;
+			// 1. Попытка совершить поворот
+			let testAngle = carAngle;
+			if (Math.abs(currentTurn) > 0.01) {
+			// Разрешаем поворачивать на месте или при разгоне/заднем ходе
+			let turnDir = currentSpeed >= 0 ? 1 : -1;
+			testAngle += currentTurn * 0.025 * turnDir;
 			}
 
-			// Проверка позиции и угла поворота на коллизии
-			let nextX = carGroup.position.x + Math.sin(nextAngle) * currentSpeed;
-			let nextZ = carGroup.position.z + Math.cos(nextAngle) * currentSpeed;
+			// Проверяем, можно ли повернуть корпуса без утыкания
+			if (!isPositionColliding(carGroup.position.x, carGroup.position.z, testAngle)) {
+			carAngle = testAngle;
+			}
 
-			if (!checkCollisions(nextX, nextZ, nextAngle)) {
-			carAngle = nextAngle;
+			// 2. Попытка совершить движение вперед/назад с отдельной проверкой по X и Z (Скольжение вдоль стены)
+			let moveX = Math.sin(carAngle) * currentSpeed;
+			let moveZ = Math.cos(carAngle) * currentSpeed;
+
+			let nextX = carGroup.position.x + moveX;
+			let nextZ = carGroup.position.z + moveZ;
+
+			// Пробуем полное движение
+			if (!isPositionColliding(nextX, nextZ, carAngle)) {
 			carGroup.position.x = nextX;
 			carGroup.position.z = nextZ;
 			} else {
-			currentSpeed = 0; // Полная и четкая остановка при любом контакте со стеной
+			// Если полная позиция блокирована, проверяем скольжение по X
+			if (!isPositionColliding(nextX, carGroup.position.z, carAngle)) {
+			carGroup.position.x = nextX;
+			}
+			// Проверяем скольжение по Z
+			else if (!isPositionColliding(carGroup.position.x, nextZ, carAngle)) {
+			carGroup.position.z = nextZ;
+			} else {
+			// Если движение наглухо заблокировано, сбрасываем текущую скорость направления
+			currentSpeed = 0;
+			}
 			}
 
 			carGroup.rotation.y = carAngle;
 			carGroup.rotation.z = currentTurn * -0.08;
 
-			// Рулевые колеса
+			// Поворот рулевых колес
 			let targetWheelRotation = currentTurn * 0.35;
 			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.1);
 			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.1);
