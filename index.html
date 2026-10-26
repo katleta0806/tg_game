@@ -85,116 +85,103 @@
 			scene.add(ground);
 
 			// ==========================================
-			//  СОЗДАНИЕ ОРАНЖЕВОГО ГИПЕРКАРА (LAMBORGHINI)
+			//  ОБЪЕМНЫЙ ОРАНЖЕВЫЙ ГИПЕРКАР
 			// ==========================================
 			const carGroup = new THREE.Group();
 
-			// Яркий оранжевый металлик
 			const carPaintMat = new THREE.MeshStandardMaterial({ color: 0xff3b00, metalness: 0.8, roughness: 0.2 });
 			const darkMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.4 });
 			const glassMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.9, roughness: 0.1 });
 			const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-			// Клиновидный нос (Капот + Бампер)
-			const hoodGeo = new THREE.ConeGeometry(1.0, 1.8, 4);
-			hoodGeo.rotateX(Math.PI / 2);
-			hoodGeo.scale(1.8, 0.35, 1.2);
-			const hood = new THREE.Mesh(hoodGeo, carPaintMat);
-			hood.position.set(0, 0.3, 1.1);
-			carGroup.add(hood);
-
-			// Центральная часть кузова
-			const mainBody = new THREE.Mesh(
-			new THREE.BoxGeometry(1.8, 0.45, 2.2),
+			// Нижняя база (основание кузова)
+			const base = new THREE.Mesh(
+			new THREE.BoxGeometry(1.8, 0.4, 3.8),
 			carPaintMat
 			);
-			mainBody.position.set(0, 0.35, -0.2);
-			carGroup.add(mainBody);
+			base.position.set(0, 0.3, 0);
+			carGroup.add(base);
 
-			// Черный агрессивный передний воздухозаборник
-			const intake = new THREE.Mesh(
-			new THREE.BoxGeometry(1.5, 0.2, 0.3),
+			// Массивный задний блок (моторный отсек)
+			const rearEngine = new THREE.Mesh(
+			new THREE.BoxGeometry(1.7, 0.5, 1.8),
+			carPaintMat
+			);
+			rearEngine.position.set(0, 0.65, -0.7);
+			carGroup.add(rearEngine);
+
+			// Высокая кабина (крыша со стеклами)
+			const cabin = new THREE.Mesh(
+			new THREE.BoxGeometry(1.4, 0.55, 1.6),
+			glassMat
+			);
+			cabin.position.set(0, 0.8, -0.1);
+			carGroup.add(cabin);
+
+			// Скошенный передний капот
+			const hood = new THREE.Mesh(
+			new THREE.BoxGeometry(1.7, 0.35, 1.4),
+			carPaintMat
+			);
+			hood.position.set(0, 0.45, 1.1);
+			carGroup.add(hood);
+
+			// Спойлер сзади
+			const spoiler = new THREE.Mesh(
+			new THREE.BoxGeometry(1.7, 0.1, 0.5),
 			darkMat
 			);
-			intake.position.set(0, 0.2, 1.85);
-			carGroup.add(intake);
+			spoiler.position.set(0, 0.95, -1.6);
+			carGroup.add(spoiler);
 
-			// Наклонное лобовое стекло и низкая крыша (Кабина)
-			const cabinGeo = new THREE.BufferGeometry();
-			// Пирамидальная форма кабины спорткара
-			const cabinVertices = new Float32Array([
-			// Лобовое + Крыша
-			-0.7, 0.45, 0.6,    0.7, 0.45, 0.6,   -0.55, 0.78, 0.0,
-			0.7, 0.45, 0.6,    0.55, 0.78, 0.0,  -0.55, 0.78, 0.0,
-			// Крыша + Заднее стекло
-			-0.55, 0.78, 0.0,   0.55, 0.78, 0.0,  -0.65, 0.5, -0.9,
-			0.55, 0.78, 0.0,   0.65, 0.5, -0.9,  -0.65, 0.5, -0.9,
-			// Бока
-			-0.7, 0.45, 0.6,   -0.55, 0.78, 0.0,  -0.65, 0.5, -0.9,
-			0.7, 0.45, 0.6,    0.65, 0.5, -0.9,   0.55, 0.78, 0.0
-			]);
-			cabinGeo.setAttribute('position', new THREE.BufferAttribute(cabinVertices, 3));
-			cabinGeo.computeVertexNormals();
-			const cabinMesh = new THREE.Mesh(cabinGeo, glassMat);
-			carGroup.add(cabinMesh);
+			const standL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.3, 0.1), darkMat);
+			standL.position.set(-0.7, 0.75, -1.6);
+			carGroup.add(standL);
+			const standR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.3, 0.1), darkMat);
+			standR.position.set(0.7, 0.75, -1.6);
+			carGroup.add(standR);
 
-			// Боковые воздухозаборники
-			const sideIntakeL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.7), darkMat);
-			sideIntakeL.position.set(-0.92, 0.38, -0.4);
-			carGroup.add(sideIntakeL);
-
-			const sideIntakeR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.7), darkMat);
-			sideIntakeR.position.set(0.92, 0.38, -0.4);
-			carGroup.add(sideIntakeR);
-
-			// Тонкие узкие светодиодные фары
-			const headLightL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.2), lightMat);
-			headLightL.position.set(-0.55, 0.35, 1.7);
-			headLightL.rotation.y = -0.3;
+			// Фары
+			const headLightL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.15), lightMat);
+			headLightL.position.set(-0.6, 0.4, 1.75);
 			carGroup.add(headLightL);
 
-			const headLightR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.2), lightMat);
-			headLightR.position.set(0.55, 0.35, 1.7);
-			headLightR.rotation.y = 0.3;
+			const headLightR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.15), lightMat);
+			headLightR.position.set(0.6, 0.4, 1.75);
 			carGroup.add(headLightR);
 
-			// Спортивные колеса (Низкопрофильная резина + тонкие диски)
-			const tireGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.22, 20);
+			// Колеса (крупные и объемные)
+			const tireGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.25, 20);
 			tireGeo.rotateZ(Math.PI / 2);
-			const rimGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.23, 10);
+			const rimGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.26, 10);
 			rimGeo.rotateZ(Math.PI / 2);
-
 			const rimMat = new THREE.MeshStandardMaterial({ color: 0x888899, metalness: 0.9, roughness: 0.1 });
 
 			function createWheel() {
-			const wheelHolder = new THREE.Group();
-			const tire = new THREE.Mesh(tireGeo, darkMat);
-			const rim = new THREE.Mesh(rimGeo, rimMat);
-			wheelHolder.add(tire);
-			wheelHolder.add(rim);
-			return wheelHolder;
+			const holder = new THREE.Group();
+			holder.add(new THREE.Mesh(tireGeo, darkMat));
+			holder.add(new THREE.Mesh(rimGeo, rimMat));
+			return holder;
 			}
 
-			// Передние поворотные колеса
 			const frontLeftWheelPivot = new THREE.Group();
-			frontLeftWheelPivot.position.set(-0.95, 0.28, 1.15);
+			frontLeftWheelPivot.position.set(-1.0, 0.3, 1.2);
 			const wheelFL = createWheel();
 			frontLeftWheelPivot.add(wheelFL);
 			carGroup.add(frontLeftWheelPivot);
 
 			const frontRightWheelPivot = new THREE.Group();
-			frontRightWheelPivot.position.set(0.95, 0.28, 1.15);
+			frontRightWheelPivot.position.set(1.0, 0.3, 1.2);
 			const wheelFR = createWheel();
 			frontRightWheelPivot.add(wheelFR);
 			carGroup.add(frontRightWheelPivot);
 
-			// Задние колеса
 			const wheelBL = createWheel();
-			wheelBL.position.set(-0.95, 0.28, -1.1);
+			wheelBL.position.set(-1.0, 0.3, -1.2);
 			carGroup.add(wheelBL);
 
 			const wheelBR = createWheel();
-			wheelBR.position.set(0.95, 0.28, -1.1);
+			wheelBR.position.set(1.0, 0.3, -1.2);
 			carGroup.add(wheelBR);
 
 			carGroup.position.set(0, 0, 0);
