@@ -52,8 +52,7 @@
 			let score = 0;
 			let coins = 0;
 
-			// --- СНИЖЕННАЯ СКОРОСТЬ И ПЛАВНОЕ УСКОРЕНИЕ ---
-			let maxSpeed = 0.17;
+			let maxSpeed = 0.16;
 			let reverseMaxSpeed = 0.07;
 			let currentSpeed = 0;
 			let isNitro = false;
@@ -90,7 +89,7 @@
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
 
-			// Массив хитбоксов только для НАСТОЯЩИХ ЗДАНИЙ И СТЕН (не тротуара)
+			// Список хитбоксов строений
 			const colliders = [];
 
 			function createBuilding(x, z, w, d, stories) {
@@ -113,14 +112,12 @@
                 }
             }
 
-            // ТОЧНЫЙ РАДИУС ЗДАНИЯ С УЧЕТОМ ДЛИНЫ НОСА МАШИНЫ (1.8м)
-            // Это мешает морде машины входить внутрь стены дома
-            const carRadius = 1.9;
+            // Границы самого дома
             colliders.push({
-                minX: x - w / 2 - carRadius,
-                maxX: x + w / 2 + carRadius,
-                minZ: z - d / 2 - carRadius,
-                maxZ: z + d / 2 + carRadius
+                minX: x - w / 2,
+                maxX: x + w / 2,
+                minZ: z - d / 2,
+                maxZ: z + d / 2
             });
         }
 
@@ -131,7 +128,6 @@
                 const stories = Math.random() > 0.5 ? 2 : 3;
                 createBuilding(bx, bz, 14, 14, stories);
 
-                // Бордюр/Тротуар теперь физическая тонкая плита (высота 0.08m)
                 const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(18, 0.08, 18), sidewalkMat);
                 sidewalk.position.set(bx, 0.04, bz);
                 scene.add(sidewalk);
@@ -142,27 +138,26 @@
         const boundLimit = 75;
         const wallThick = 4;
         const wallH = 10;
-        const carWallRadius = 1.9;
 
         const wallN = new THREE.Mesh(new THREE.BoxGeometry(citySize, wallH, wallThick), wallMat);
         wallN.position.set(0, wallH/2, boundLimit);
         scene.add(wallN);
-        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: boundLimit - carWallRadius, maxZ: boundLimit + 5 });
+        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: boundLimit - wallThick/2, maxZ: boundLimit + 10 });
 
         const wallS = new THREE.Mesh(new THREE.BoxGeometry(citySize, wallH, wallThick), wallMat);
         wallS.position.set(0, wallH/2, -boundLimit);
         scene.add(wallS);
-        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: -boundLimit - 5, maxZ: -boundLimit + carWallRadius });
+        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: -boundLimit - 10, maxZ: -boundLimit + wallThick/2 });
 
         const wallW = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, citySize), wallMat);
         wallW.position.set(-boundLimit, wallH/2, 0);
         scene.add(wallW);
-        colliders.push({ minX: -boundLimit - 5, maxX: -boundLimit + carWallRadius, minZ: -boundLimit, maxZ: boundLimit });
+        colliders.push({ minX: -boundLimit - 10, maxX: -boundLimit + wallThick/2, minZ: -boundLimit, maxZ: boundLimit });
 
         const wallE = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, citySize), wallMat);
         wallE.position.set(boundLimit, wallH/2, 0);
         scene.add(wallE);
-        colliders.push({ minX: boundLimit - carWallRadius, maxX: boundLimit + 5, minZ: -boundLimit, maxZ: boundLimit });
+        colliders.push({ minX: boundLimit - wallThick/2, maxX: boundLimit + 10, minZ: -boundLimit, maxZ: boundLimit });
 
         // Фонарные столбы
         const lampMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
@@ -372,28 +367,44 @@
             tg.sendData(JSON.stringify({ score: score, coins: coins }));
         }
 
-        // Проверка столкновения со зданиями и стенами
-        function checkCollisions(nextX, nextZ) {
+        // ТОЧНАЯ ПРОВЕРКА КОЛЛИЗИИ ВСЕХ 4 УГЛОВ КУЗОВА С УЧЕТОМ УГЛА ПОВОРОТА (OBB)
+        function checkCollisions(nextX, nextZ, angle) {
+            const halfW = 1.0; // Ширина машины с колесами
+            const halfL = 1.9; // Длина машины с бамперами
+
+            // Расчет 4 углов кузова машины в мировых координатах
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+
+            const corners = [
+                { x: nextX + ( sin * halfL + cos * halfW), z: nextZ + ( cos * halfL - sin * halfW) }, // Передний правый
+                { x: nextX + ( sin * halfL - cos * halfW), z: nextZ + ( cos * halfL + sin * halfW) }, // Передний левый
+                { x: nextX + (-sin * halfL + cos * halfW), z: nextZ + (-cos * halfL - sin * halfW) }, // Задний правый
+                { x: nextX + (-sin * halfL - cos * halfW), z: nextZ + (-cos * halfL + sin * halfW) }  // Задний левый
+            ];
+
             for (let c of colliders) {
-                if (nextX > c.minX && nextX < c.maxX && nextZ > c.minZ && nextZ < c.maxZ) {
-                    return true;
-                }
-            }
-            return false;
-        }
+                for (let p of corners) {
+                    if (p.x >= c.minX && p.x <= c.maxX && p.z >= c.minZ && p.z <= c.maxZ) {
+			return true; // Какой-то из углов машины коснулся здания
+			}
+			}
+			}
+			return false;
+			}
 
-        function animate() {
-            requestAnimationFrame(animate);
+			function animate() {
+			requestAnimationFrame(animate);
 
-            coinsList.forEach(coin => {
-                coin.rotation.z += 0.03;
-            });
+			coinsList.forEach(coin => {
+			coin.rotation.z += 0.03;
+			});
 
-            if (gameActive) {
-                const isLeft = keyLeft || btnLeft;
-                const isRight = keyRight || btnRight;
+			if (gameActive) {
+			const isLeft = keyLeft || btnLeft;
+			const isRight = keyRight || btnRight;
 
-                let isReversing = isLeft && isRight;
+			let isReversing = isLeft && isRight;
 
 			let targetSpeed = 0;
 			let targetTurn = 0;
@@ -407,15 +418,25 @@
 			if (isRight) targetTurn = -1;
 			}
 
-			// ОЧЕНЬ ПЛАВНЫЙ И ТЯЖЕЛЫЙ НАБОР СКОРОСТИ (Ускорение 0.015)
 			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.015);
-
-			// ПЛАВНЫЙ ПОВОРОТ
 			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.07);
 
+			let nextAngle = carAngle;
 			if (Math.abs(currentSpeed) > 0.005) {
 			const dir = currentSpeed > 0 ? 1 : -1;
-			carAngle += currentTurn * 0.022 * dir;
+			nextAngle += currentTurn * 0.022 * dir;
+			}
+
+			// Проверка позиции и угла поворота на коллизии
+			let nextX = carGroup.position.x + Math.sin(nextAngle) * currentSpeed;
+			let nextZ = carGroup.position.z + Math.cos(nextAngle) * currentSpeed;
+
+			if (!checkCollisions(nextX, nextZ, nextAngle)) {
+			carAngle = nextAngle;
+			carGroup.position.x = nextX;
+			carGroup.position.z = nextZ;
+			} else {
+			currentSpeed = 0; // Полная и четкая остановка при любом контакте со стеной
 			}
 
 			carGroup.rotation.y = carAngle;
@@ -431,17 +452,6 @@
 			wheelFR.rotation.x -= currentSpeed * 2.5;
 			wheelBL.rotation.x -= currentSpeed * 2.5;
 			wheelBR.rotation.x -= currentSpeed * 2.5;
-
-			// Проверка позиции на столкновения
-			let nextX = carGroup.position.x + Math.sin(carAngle) * currentSpeed;
-			let nextZ = carGroup.position.z + Math.cos(carAngle) * currentSpeed;
-
-			if (!checkCollisions(nextX, nextZ)) {
-			carGroup.position.x = nextX;
-			carGroup.position.z = nextZ;
-			} else {
-			currentSpeed = 0; // Мягкая остановка при контакте со стеной дома
-			}
 
 			// Сбор монеток
 			coinsList.forEach(coin => {
