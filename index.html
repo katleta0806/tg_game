@@ -62,7 +62,7 @@
 
 			const scene = new THREE.Scene();
 			scene.background = new THREE.Color(0x050510);
-			scene.fog = new THREE.FogExp2(0x050510, 0.015);
+			scene.fog = new THREE.FogExp2(0x050510, 0.012);
 
 			const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 			const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -75,7 +75,7 @@
 			scene.add(dirLight);
 
 			// ==========================================
-			//  МАТЕРИАЛЫ И КАРТА С ШИРОКИМИ ДОРОГАМИ
+			//  МАТЕРИАЛЫ И КАРТА
 			// ==========================================
 			const darkMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.5 });
 			const wallMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.7 });
@@ -119,35 +119,33 @@
             });
         }
 
-        // --- СЕТКА 4х4 КВАРТАЛОВ С ШИРОКИМИ ДОРОГАМИ И РАЗДЕЛИТЕЛЬНЫМИ ПОЛОСАМИ ---
-        const gridXCoords = [-52, -17, 17, 52];
-        const gridZCoords = [-52, -17, 17, 52];
+        // --- СЕТКА 4х4 КВАРТАЛОВ ---
+        const gridXCoords = [-51, -17, 17, 51];
+        const gridZCoords = [-51, -17, 17, 51];
 
         gridXCoords.forEach(bx => {
             gridZCoords.forEach(bz => {
                 const stories = Math.random() > 0.5 ? 2 : 3;
                 createBuilding(bx, bz, 20, 20, stories);
 
-                // Тротуар
                 const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(24, 0.08, 24), sidewalkMat);
                 sidewalk.position.set(bx, 0.04, bz);
                 scene.add(sidewalk);
             });
         });
 
-        // Добавление разделительных белых линий для двух полос движения на дорогах
-        gridXCoords.forEach(bx => {
+        // Аккуратные разделительные линии по центру дорог между кварталами
+        [-34, 0, 34].forEach(coord => {
             const lineZ = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.09, mapSize - 20), lineMat);
-            lineZ.position.set(bx - 13.5, 0.045, 0);
+            lineZ.position.set(coord, 0.045, 0);
             scene.add(lineZ);
-        });
-        gridZCoords.forEach(bz => {
+
             const lineX = new THREE.Mesh(new THREE.BoxGeometry(mapSize - 20, 0.09, 0.3), lineMat);
-            lineX.position.set(0, 0.045, bz - 13.5);
+            lineX.position.set(0, 0.045, coord);
             scene.add(lineX);
         });
 
-        // --- ВНЕШНИЙ ПЕРИМЕТР (ЗДАНИЯ ПО КРАЯМ) ---
+        // --- ВНЕШНИЙ ПЕРИМЕТР ---
         const borderLimit = 75;
         const outerWallThick = 12;
 
@@ -165,8 +163,8 @@
 
         // Фонари
         const lampMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
-        [-35, 0, 35].forEach(lx => {
-            [-35, 0, 35].forEach(lz => {
+        [-34, 0, 34].forEach(lx => {
+            [-34, 0, 34].forEach(lz => {
                 const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 4.5), darkMat);
                 pole.position.set(lx, 2.25, lz);
                 scene.add(pole);
@@ -459,18 +457,15 @@
 			carGroup.rotation.y = carAngle;
 			carGroup.rotation.z = currentTurn * -0.06;
 
-			// Выразительный поворот передних колес
 			let targetWheelRotation = currentTurn * 0.75;
 			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.15);
 			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.15);
 
-			// Вращение колес
 			wheelFL.rotation.x -= currentSpeed * 2.5;
 			wheelFR.rotation.x -= currentSpeed * 2.5;
 			wheelBL.rotation.x -= currentSpeed * 2.5;
 			wheelBR.rotation.x -= currentSpeed * 2.5;
 
-			// Сбор монеток
 			coinsList.forEach(coin => {
 			const dist = carGroup.position.distanceTo(coin.position);
 			if (dist < 1.8) {
@@ -483,9 +478,9 @@
                 score += 1;
                 document.getElementById('score').innerText = score;
 
-                // --- КАМЕРА ОТДАНА НАВЕРХ И НАЗАД ДЛЯ ОТЛИЧНОГО ОБЗОРА ---
-                const camDist = 11.0;  // Дальше от машины
-                const camHeight = 5.0; // Выше над машиной
+                // --- КАМЕРА ВЫСОКО СВЕРХУ ПОД УГЛОМ ОКОЛО 80 ГРАДУСОВ ---
+                const camDist = 5.5;   // Ближе к машине по горизонтали
+                const camHeight = 11.0; // Очень высоко вверх
                 let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
                 let targetCamZ = carGroup.position.z - Math.cos(carAngle) * camDist;
 
@@ -493,7 +488,7 @@
                 camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.1);
                 camera.position.y = carGroup.position.y + camHeight;
                 
-                camera.lookAt(carGroup.position.x, carGroup.position.y + 0.5, carGroup.position.z);
+                camera.lookAt(carGroup.position.x, carGroup.position.y, carGroup.position.z);
             }
 
             renderer.render(scene, camera);
