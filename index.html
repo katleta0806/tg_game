@@ -52,7 +52,6 @@
 			let score = 0;
 			let coins = 0;
 
-			// --- УМЕНЬШЕННАЯ МАКСИМАЛЬНАЯ СКОРОСТЬ И МЯГКИЙ РАЗГОН ---
 			let maxSpeed = 0.11;
 			let reverseMaxSpeed = 0.05;
 			let currentSpeed = 0;
@@ -76,7 +75,7 @@
 			scene.add(dirLight);
 
 			// ==========================================
-			//  МАТЕРИАЛЫ И ОКРУЖЕНИЕ
+			//  МАТЕРИАЛЫ И КАРТА ПО ТВОЕМУ ЧЕРТЕЖУ
 			// ==========================================
 			const darkMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.5 });
 			const wallMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.7 });
@@ -85,8 +84,8 @@
 			const roadMat = new THREE.MeshStandardMaterial({ color: 0x15151c, roughness: 0.8 });
 			const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x282832, roughness: 0.6 });
 
-			const citySize = 160;
-			const ground = new THREE.Mesh(new THREE.PlaneGeometry(citySize, citySize), roadMat);
+			const mapSize = 140;
+			const ground = new THREE.Mesh(new THREE.PlaneGeometry(mapSize, mapSize), roadMat);
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
 
@@ -119,66 +118,66 @@
             });
         }
 
-        for (let bx = -50; bx <= 50; bx += 35) {
-			for (let bz = -50; bz <= 50; bz += 35) {
-			if (Math.abs(bx) < 15 && Math.abs(bz) < 15) continue;
-                const stories = Math.random() > 0.5 ? 2 : 3;
-                createBuilding(bx, bz, 14, 14, stories);
+        // --- 1. СЕТКА 4х4 ВНУТРЕННИХ КВАРТАЛОВ-ЗДАНИЙ (как на чертеже) ---
+        const gridXCoords = [-45, -15, 15, 45];
+        const gridZCoords = [-45, -15, 15, 45];
 
-                const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(18, 0.08, 18), sidewalkMat);
+        gridXCoords.forEach(bx => {
+            gridZCoords.forEach(bz => {
+                const stories = Math.random() > 0.5 ? 2 : 3;
+                createBuilding(bx, bz, 22, 22, stories);
+
+                // Тротуар вокруг квартала
+                const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(25, 0.08, 25), sidewalkMat);
                 sidewalk.position.set(bx, 0.04, bz);
                 scene.add(sidewalk);
-            }
-        }
+            });
+        });
 
-        const boundLimit = 75;
-        const wallThick = 4;
-        const wallH = 10;
+        // --- 2. ВНЕШНИЙ КОНТУР КАК СТЕНА/ЗДАНИЯ ПО ПЕРИМЕТРУ ---
+        const borderLimit = 65;
+        const outerWallThick = 10;
+        const outerWallH = 12;
 
-        const wallN = new THREE.Mesh(new THREE.BoxGeometry(citySize, wallH, wallThick), wallMat);
-        wallN.position.set(0, wallH/2, boundLimit);
-        scene.add(wallN);
-        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: boundLimit - wallThick/2, maxZ: boundLimit + 10 });
+        // Север
+        createBuilding(0, borderLimit, mapSize, outerWallThick, 3);
+        colliders.push({ minX: -mapSize/2, maxX: mapSize/2, minZ: borderLimit - outerWallThick/2, maxZ: borderLimit + outerWallThick });
+        // Юг
+        createBuilding(0, -borderLimit, mapSize, outerWallThick, 3);
+        colliders.push({ minX: -mapSize/2, maxX: mapSize/2, minZ: -borderLimit - outerWallThick, maxZ: -borderLimit + outerWallThick/2 });
+        // Запад
+        createBuilding(-borderLimit, 0, outerWallThick, mapSize, 3);
+        colliders.push({ minX: -borderLimit - outerWallThick, maxX: -borderLimit + outerWallThick/2, minZ: -mapSize/2, maxZ: mapSize/2 });
+        // Восток
+        createBuilding(borderLimit, 0, outerWallThick, mapSize, 3);
+        colliders.push({ minX: borderLimit - outerWallThick/2, maxX: borderLimit + outerWallThick, minZ: -mapSize/2, maxZ: mapSize/2 });
 
-        const wallS = new THREE.Mesh(new THREE.BoxGeometry(citySize, wallH, wallThick), wallMat);
-        wallS.position.set(0, wallH/2, -boundLimit);
-        scene.add(wallS);
-        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: -boundLimit - 10, maxZ: -boundLimit + wallThick/2 });
-
-        const wallW = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, citySize), wallMat);
-        wallW.position.set(-boundLimit, wallH/2, 0);
-        scene.add(wallW);
-        colliders.push({ minX: -boundLimit - 10, maxX: -boundLimit + wallThick/2, minZ: -boundLimit, maxZ: boundLimit });
-
-        const wallE = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, citySize), wallMat);
-        wallE.position.set(boundLimit, wallH/2, 0);
-        scene.add(wallE);
-        colliders.push({ minX: boundLimit - wallThick/2, maxX: boundLimit + 10, minZ: -boundLimit, maxZ: boundLimit });
-
+        // Фонарные столбы по дорогам
         const lampMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
-        for (let lx = -60; lx <= 60; lx += 30) {
-			for (let lz = -60; lz <= 60; lz += 30) {
-			const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 4.5), darkMat);
-			pole.position.set(lx + 10, 2.25, lz + 10);
-			scene.add(pole);
+        [-30, 0, 30].forEach(lx => {
+            [-30, 0, 30].forEach(lz => {
+                const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 4.5), darkMat);
+                pole.position.set(lx, 2.25, lz);
+                scene.add(pole);
 
-			const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.3), lampMat);
-			bulb.position.set(lx + 10, 4.5, lz + 10);
-			scene.add(bulb);
+                const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.3), lampMat);
+                bulb.position.set(lx, 4.5, lz);
+                scene.add(bulb);
 
-			const pLight = new THREE.PointLight(0xffaa33, 0.7, 18);
-			pLight.position.set(lx + 10, 4.3, lz + 10);
-			scene.add(pLight);
-			}
-			}
+                const pLight = new THREE.PointLight(0xffaa33, 0.7, 18);
+                pLight.position.set(lx, 4.3, lz);
+                scene.add(pLight);
+            });
+        });
 
-			const coinsList = [];
-			const coinGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.12, 16);
-			coinGeo.rotateX(Math.PI / 2);
-			const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1 });
+        // Монетки на дорогах
+        const coinsList = [];
+        const coinGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.12, 16);
+        coinGeo.rotateX(Math.PI / 2);
+        const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1 });
 
-			function spawnCoins() {
-			for (let i = 0; i < 20; i++) {
+        function spawnCoins() {
+            for (let i = 0; i < 20; i++) {
                 const coin = new THREE.Mesh(coinGeo, coinMat);
                 resetCoinPos(coin);
                 scene.add(coin);
@@ -187,8 +186,8 @@
         }
 
         function resetCoinPos(coin) {
-            coin.position.x = (Math.random() - 0.5) * 120;
-            coin.position.z = (Math.random() - 0.5) * 120;
+            coin.position.x = (Math.random() - 0.5) * 100;
+            coin.position.z = (Math.random() - 0.5) * 100;
             coin.position.y = 0.6;
         }
         spawnCoins();
@@ -293,7 +292,7 @@
         scene.add(carGroup);
 
         // ==========================================
-        //  УПРАВЛЕНИЕ И УЛУЧШЕННАЯ ФИЗИКА ТРЕНИЯ
+        //  УПРАВЛЕНИЕ И ФИЗИКА КОЛЛИЗИЙ
         // ==========================================
         let keyLeft = false;
         let keyRight = false;
@@ -410,28 +409,21 @@
 			if (isRight) targetTurn = -1;
 			}
 
-			// ОЧЕНЬ ПЛАВНЫЙ РАЗГОН И СНИЖЕНИЕ СКОРОСТИ
 			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.012);
-			// ЕЩЁ БОЛЕЕ ПЛАВНЫЙ И ТЯЖЕЛЫЙ ПОВОРОТ РУЛЯ
-			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.045);
+			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.06);
 
-			// 1. Поворот угла кузова
 			let testAngle = carAngle;
 			if (Math.abs(currentTurn) > 0.005) {
 			let turnDir = currentSpeed >= 0 ? 1 : -1;
-			// Плавный угол поворота
 			testAngle += currentTurn * 0.016 * turnDir;
 			}
 
-			// Проверяем, свободен ли поворот
 			if (!isPositionColliding(carGroup.position.x, carGroup.position.z, testAngle)) {
 			carAngle = testAngle;
 			} else {
-			// Если поворачиваем в сторону стены, сопротивление зажимает руль
 			currentTurn *= 0.5;
 			}
 
-			// 2. Движение с гашением скорости об стену (Трение)
 			let moveX = Math.sin(carAngle) * currentSpeed;
 			let moveZ = Math.cos(carAngle) * currentSpeed;
 
@@ -442,7 +434,6 @@
 			carGroup.position.x = nextX;
 			carGroup.position.z = nextZ;
 			} else {
-			// ПРИ КАСАТЕЛЬНОМ УДАРЕ СКОРОСТЬ СИЛЬНО РЕЖЕТСЯ (Трение об стену)
 			currentSpeed *= 0.35;
 
 			if (!isPositionColliding(nextX, carGroup.position.z, carAngle)) {
@@ -457,10 +448,10 @@
 			carGroup.rotation.y = carAngle;
 			carGroup.rotation.z = currentTurn * -0.06;
 
-			// Поворот рулевых колес
-			let targetWheelRotation = currentTurn * 0.3;
-			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.08);
-			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.08);
+			// --- УВЕЛИЧЕННЫЙ И БОЛЕЕ ВЫРАЗИТЕЛЬНЫЙ УГОЛ ПОВОРОТА КОЛЕС ---
+			let targetWheelRotation = currentTurn * 0.75; // Сделали поворот шире и заметнее
+			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.15);
+			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.15);
 
 			// Вращение колес
 			wheelFL.rotation.x -= currentSpeed * 2.5;
@@ -481,7 +472,7 @@
                 score += 1;
                 document.getElementById('score').innerText = score;
 
-                // Слежение камеры
+                // Камера сзади
                 const camDist = 8.5;
                 const camHeight = 3.5;
                 let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
