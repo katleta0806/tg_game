@@ -52,8 +52,9 @@
 			let score = 0;
 			let coins = 0;
 
-			let maxSpeed = 0.16;
-			let reverseMaxSpeed = 0.07;
+			// --- УМЕНЬШЕННАЯ МАКСИМАЛЬНАЯ СКОРОСТЬ И МЯГКИЙ РАЗГОН ---
+			let maxSpeed = 0.11;
+			let reverseMaxSpeed = 0.05;
 			let currentSpeed = 0;
 			let isNitro = false;
 			let gameActive = false;
@@ -292,7 +293,7 @@
         scene.add(carGroup);
 
         // ==========================================
-        //  УПРАВЛЕНИЕ И УЛУЧШЕННАЯ ФИЗИКА КОЛЛИЗИЙ
+        //  УПРАВЛЕНИЕ И УЛУЧШЕННАЯ ФИЗИКА ТРЕНИЯ
         // ==========================================
         let keyLeft = false;
         let keyRight = false;
@@ -360,7 +361,6 @@
             tg.sendData(JSON.stringify({ score: score, coins: coins }));
         }
 
-        // Проверка столкновения 4 углов машины
         function isPositionColliding(posX, posZ, angle) {
             const halfW = 0.95; 
             const halfL = 1.85; 
@@ -405,59 +405,62 @@
 			targetSpeed = -reverseMaxSpeed;
 			targetTurn = 0;
 			} else {
-			targetSpeed = isNitro ? maxSpeed * 1.8 : maxSpeed;
+			targetSpeed = isNitro ? maxSpeed * 1.6 : maxSpeed;
 			if (isLeft) targetTurn = 1;
 			if (isRight) targetTurn = -1;
 			}
 
-			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.02);
-			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.08);
+			// ОЧЕНЬ ПЛАВНЫЙ РАЗГОН И СНИЖЕНИЕ СКОРОСТИ
+			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.012);
+			// ЕЩЁ БОЛЕЕ ПЛАВНЫЙ И ТЯЖЕЛЫЙ ПОВОРОТ РУЛЯ
+			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.045);
 
-			// 1. Попытка совершить поворот
+			// 1. Поворот угла кузова
 			let testAngle = carAngle;
-			if (Math.abs(currentTurn) > 0.01) {
-			// Разрешаем поворачивать на месте или при разгоне/заднем ходе
+			if (Math.abs(currentTurn) > 0.005) {
 			let turnDir = currentSpeed >= 0 ? 1 : -1;
-			testAngle += currentTurn * 0.025 * turnDir;
+			// Плавный угол поворота
+			testAngle += currentTurn * 0.016 * turnDir;
 			}
 
-			// Проверяем, можно ли повернуть корпуса без утыкания
+			// Проверяем, свободен ли поворот
 			if (!isPositionColliding(carGroup.position.x, carGroup.position.z, testAngle)) {
 			carAngle = testAngle;
+			} else {
+			// Если поворачиваем в сторону стены, сопротивление зажимает руль
+			currentTurn *= 0.5;
 			}
 
-			// 2. Попытка совершить движение вперед/назад с отдельной проверкой по X и Z (Скольжение вдоль стены)
+			// 2. Движение с гашением скорости об стену (Трение)
 			let moveX = Math.sin(carAngle) * currentSpeed;
 			let moveZ = Math.cos(carAngle) * currentSpeed;
 
 			let nextX = carGroup.position.x + moveX;
 			let nextZ = carGroup.position.z + moveZ;
 
-			// Пробуем полное движение
 			if (!isPositionColliding(nextX, nextZ, carAngle)) {
 			carGroup.position.x = nextX;
 			carGroup.position.z = nextZ;
 			} else {
-			// Если полная позиция блокирована, проверяем скольжение по X
+			// ПРИ КАСАТЕЛЬНОМ УДАРЕ СКОРОСТЬ СИЛЬНО РЕЖЕТСЯ (Трение об стену)
+			currentSpeed *= 0.35;
+
 			if (!isPositionColliding(nextX, carGroup.position.z, carAngle)) {
 			carGroup.position.x = nextX;
-			}
-			// Проверяем скольжение по Z
-			else if (!isPositionColliding(carGroup.position.x, nextZ, carAngle)) {
+			} else if (!isPositionColliding(carGroup.position.x, nextZ, carAngle)) {
 			carGroup.position.z = nextZ;
 			} else {
-			// Если движение наглухо заблокировано, сбрасываем текущую скорость направления
 			currentSpeed = 0;
 			}
 			}
 
 			carGroup.rotation.y = carAngle;
-			carGroup.rotation.z = currentTurn * -0.08;
+			carGroup.rotation.z = currentTurn * -0.06;
 
 			// Поворот рулевых колес
-			let targetWheelRotation = currentTurn * 0.35;
-			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.1);
-			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.1);
+			let targetWheelRotation = currentTurn * 0.3;
+			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.08);
+			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.08);
 
 			// Вращение колес
 			wheelFL.rotation.x -= currentSpeed * 2.5;
@@ -478,7 +481,7 @@
                 score += 1;
                 document.getElementById('score').innerText = score;
 
-                // Камера сзади
+                // Слежение камеры
                 const camDist = 8.5;
                 const camHeight = 3.5;
                 let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
