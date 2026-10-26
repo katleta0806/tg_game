@@ -121,26 +121,29 @@
 
         carGroup.position.set(0, 0, 0);
         scene.add(carGroup);
-
-        // Управление
+		
+        // Универсальное управление (мышь + сенсор без залипаний)
         let moveLeft = false;
         let moveRight = false;
 
-        document.getElementById('left').addEventListener('touchstart', (e) => { e.preventDefault(); moveLeft = true; });
-        document.getElementById('left').addEventListener('touchend', () => moveLeft = false);
-        document.getElementById('right').addEventListener('touchstart', (e) => { e.preventDefault(); moveRight = true; });
-        document.getElementById('right').addEventListener('touchend', () => moveRight = false);
-        document.getElementById('nitro').addEventListener('touchstart', (e) => { e.preventDefault(); isNitro = true; });
-        document.getElementById('nitro').addEventListener('touchend', () => isNitro = false);
+        const leftBtn = document.getElementById('left');
+        const rightBtn = document.getElementById('right');
+        const nitroBtn = document.getElementById('nitro');
 
-        document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('restart-btn').addEventListener('click', startGame);
+        // Левая кнопка
+        leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); moveLeft = true; });
+        leftBtn.addEventListener('pointerup', () => moveLeft = false);
+        leftBtn.addEventListener('pointerleave', () => moveLeft = false);
 
-        function startGame() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('gameover-screen').style.display = 'none';
-            document.getElementById('ui').style.display = 'block';
-            document.getElementById('controls').style.display = 'flex';
+        // Правая кнопка
+        rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); moveRight = true; });
+        rightBtn.addEventListener('pointerup', () => moveRight = false);
+        rightBtn.addEventListener('pointerleave', () => moveRight = false);
+
+        // Нитро
+        nitroBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isNitro = true; });
+        nitroBtn.addEventListener('pointerup', () => isNitro = false);
+        nitroBtn.addEventListener('pointerleave', () => isNitro = false);
             
             score = 0;
             carGroup.position.set(0, 0, 0);
