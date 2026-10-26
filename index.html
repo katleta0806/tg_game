@@ -51,8 +51,10 @@
 
 			let score = 0;
 			let coins = 0;
-			let maxSpeed = 0.22;
-			let reverseMaxSpeed = 0.09;
+
+			// --- СНИЖЕННАЯ СКОРОСТЬ И ПЛАВНОЕ УСКОРЕНИЕ ---
+			let maxSpeed = 0.17;
+			let reverseMaxSpeed = 0.07;
 			let currentSpeed = 0;
 			let isNitro = false;
 			let gameActive = false;
@@ -88,10 +90,9 @@
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
 
-			// Массив коллизий
+			// Массив хитбоксов только для НАСТОЯЩИХ ЗДАНИЙ И СТЕН (не тротуара)
 			const colliders = [];
 
-			// Создание зданий и тротуаров с точной коллизией
 			function createBuilding(x, z, w, d, stories) {
 			const storyHeight = 3.2;
 			const h = stories * storyHeight;
@@ -112,13 +113,14 @@
                 }
             }
 
-            // Увеличенный радиус коллизии с учетом тротуара (ширина w + тротуар + запас капота машины)
-            const padding = 2.4; 
+            // ТОЧНЫЙ РАДИУС ЗДАНИЯ С УЧЕТОМ ДЛИНЫ НОСА МАШИНЫ (1.8м)
+            // Это мешает морде машины входить внутрь стены дома
+            const carRadius = 1.9;
             colliders.push({
-                minX: x - w / 2 - padding,
-                maxX: x + w / 2 + padding,
-                minZ: z - d / 2 - padding,
-                maxZ: z + d / 2 + padding
+                minX: x - w / 2 - carRadius,
+                maxX: x + w / 2 + carRadius,
+                minZ: z - d / 2 - carRadius,
+                maxZ: z + d / 2 + carRadius
             });
         }
 
@@ -129,8 +131,9 @@
                 const stories = Math.random() > 0.5 ? 2 : 3;
                 createBuilding(bx, bz, 14, 14, stories);
 
-                const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(18, 0.15, 18), sidewalkMat);
-                sidewalk.position.set(bx, 0.07, bz);
+                // Бордюр/Тротуар теперь физическая тонкая плита (высота 0.08m)
+                const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(18, 0.08, 18), sidewalkMat);
+                sidewalk.position.set(bx, 0.04, bz);
                 scene.add(sidewalk);
             }
         }
@@ -139,27 +142,27 @@
         const boundLimit = 75;
         const wallThick = 4;
         const wallH = 10;
-        const wallPadding = 2.2;
+        const carWallRadius = 1.9;
 
         const wallN = new THREE.Mesh(new THREE.BoxGeometry(citySize, wallH, wallThick), wallMat);
         wallN.position.set(0, wallH/2, boundLimit);
         scene.add(wallN);
-        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: boundLimit - wallPadding, maxZ: boundLimit + 5 });
+        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: boundLimit - carWallRadius, maxZ: boundLimit + 5 });
 
         const wallS = new THREE.Mesh(new THREE.BoxGeometry(citySize, wallH, wallThick), wallMat);
         wallS.position.set(0, wallH/2, -boundLimit);
         scene.add(wallS);
-        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: -boundLimit - 5, maxZ: -boundLimit + wallPadding });
+        colliders.push({ minX: -boundLimit, maxX: boundLimit, minZ: -boundLimit - 5, maxZ: -boundLimit + carWallRadius });
 
         const wallW = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, citySize), wallMat);
         wallW.position.set(-boundLimit, wallH/2, 0);
         scene.add(wallW);
-        colliders.push({ minX: -boundLimit - 5, maxX: -boundLimit + wallPadding, minZ: -boundLimit, maxZ: boundLimit });
+        colliders.push({ minX: -boundLimit - 5, maxX: -boundLimit + carWallRadius, minZ: -boundLimit, maxZ: boundLimit });
 
         const wallE = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, citySize), wallMat);
         wallE.position.set(boundLimit, wallH/2, 0);
         scene.add(wallE);
-        colliders.push({ minX: boundLimit - wallPadding, maxX: boundLimit + 5, minZ: -boundLimit, maxZ: boundLimit });
+        colliders.push({ minX: boundLimit - carWallRadius, maxX: boundLimit + 5, minZ: -boundLimit, maxZ: boundLimit });
 
         // Фонарные столбы
         const lampMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
@@ -404,15 +407,14 @@
 			if (isRight) targetTurn = -1;
 			}
 
-			// МЯГКИЙ И ПОСТЕПЕННЫЙ НАБОР СКОРОСТИ (Ускорение/Инерция)
-			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.025);
+			// ОЧЕНЬ ПЛАВНЫЙ И ТЯЖЕЛЫЙ НАБОР СКОРОСТИ (Ускорение 0.015)
+			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.015);
 
-			// ПЛАВНЫЙ И РЕАЛИСТИЧНЫЙ ПОВОРОТ
+			// ПЛАВНЫЙ ПОВОРОТ
 			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.07);
 
 			if (Math.abs(currentSpeed) > 0.005) {
 			const dir = currentSpeed > 0 ? 1 : -1;
-			// Скорость поворота адаптирована, чтобы машина не вращалась волчком
 			carAngle += currentTurn * 0.022 * dir;
 			}
 
@@ -438,7 +440,7 @@
 			carGroup.position.x = nextX;
 			carGroup.position.z = nextZ;
 			} else {
-			currentSpeed = 0; // Мягкая остановка при касании отступа
+			currentSpeed = 0; // Мягкая остановка при контакте со стеной дома
 			}
 
 			// Сбор монеток
