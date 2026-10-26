@@ -23,7 +23,7 @@
 	<body>
 		<div id="start-screen" class="screen">
 			<h1>CYBER ARENA</h1>
-			<p>Свободная езда на спорткаре!</p>
+			<p>Плавный круиз на спорткаре!</p>
 			<p style="font-size: 14px; color: #ff0055;">Управление: A / D или Стрелки (Пробел — Нитро)</p>
 			<button class="menu-btn" id="start-btn">СТАРТ</button>
 		</div>
@@ -53,10 +53,12 @@
 
 			let score = 0;
 			let coins = 0;
-			let speed = 0.4;
+			let baseSpeed = 0.25; // Снизили базовую скорость для плавности
+			let currentSpeed = 0.25;
 			let isNitro = false;
 			let gameActive = false;
 			let carAngle = 0;
+			let currentTurn = 0; // Плавное значение поворота
 
 			const scene = new THREE.Scene();
 			scene.background = new THREE.Color(0x050510);
@@ -81,10 +83,9 @@
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
 
-			// --- ДЕТАЛИЗИРОВАННАЯ МОДЕЛЬ МАШИНЫ ---
+			// Детализированная модель машины
 			const carGroup = new THREE.Group();
 
-			// Основной кузов спорткара
 			const body = new THREE.Mesh(
 			new THREE.BoxGeometry(1.6, 0.4, 3.6),
 			new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.8, roughness: 0.2 })
@@ -92,7 +93,6 @@
 			body.position.y = 0.3;
 			carGroup.add(body);
 
-			// Кабина (крыша)
 			const cabin = new THREE.Mesh(
 			new THREE.BoxGeometry(1.3, 0.4, 1.8),
 			new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.1, metalness: 0.5 })
@@ -100,7 +100,6 @@
 			cabin.position.set(0, 0.7, -0.2);
 			carGroup.add(cabin);
 
-			// Спойлер сзади
 			const spoiler = new THREE.Mesh(
 			new THREE.BoxGeometry(1.5, 0.08, 0.5),
 			new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9 })
@@ -108,7 +107,6 @@
 			spoiler.position.set(0, 0.75, -1.6);
 			carGroup.add(spoiler);
 
-			// Стойки спойлера
 			const spoilerStandMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
 			const standLeft = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.1), spoilerStandMat);
 			standLeft.position.set(-0.6, 0.6, -1.6);
@@ -117,7 +115,6 @@
 			standRight.position.set(0.6, 0.6, -1.6);
 			carGroup.add(standRight);
 
-			// Фары (неоновые)
 			const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
 			const lightLeft = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.1), lightMat);
 			lightLeft.position.set(-0.5, 0.3, 1.81);
@@ -126,12 +123,10 @@
 			lightRight.position.set(0.5, 0.3, 1.81);
 			carGroup.add(lightRight);
 
-			// Создаем колеса (цилиндры)
 			const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 16);
 			wheelGeo.rotateZ(Math.PI / 2);
 			const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
 
-			// Передние колесные пивоты (для поворота руля)
 			const frontLeftWheelPivot = new THREE.Group();
 			frontLeftWheelPivot.position.set(-0.9, 0.25, 1.2);
 			const wheelFL = new THREE.Mesh(wheelGeo, wheelMat);
@@ -144,7 +139,6 @@
 			frontRightWheelPivot.add(wheelFR);
 			carGroup.add(frontRightWheelPivot);
 
-			// Задние колеса (статичные по повороту)
 			const wheelBL = new THREE.Mesh(wheelGeo, wheelMat);
 			wheelBL.position.set(-0.9, 0.25, -1.2);
 			carGroup.add(wheelBL);
@@ -156,7 +150,7 @@
 			carGroup.position.set(0, 0, 0);
 			scene.add(carGroup);
 
-			// Флаги управления
+			// Управление
 			let keyLeft = false;
 			let keyRight = false;
 			let btnLeft = false;
@@ -205,6 +199,7 @@
 			score = 0;
 			carGroup.position.set(0, 0, 0);
 			carAngle = 0;
+			currentTurn = 0;
 			keyLeft = false;
 			keyRight = false;
 			btnLeft = false;
@@ -225,26 +220,32 @@
 			requestAnimationFrame(animate);
 
 			if (gameActive) {
-			let currentSpeed = isNitro ? speed * 2.2 : speed;
+			// Плавное ускорение и нитро
+			let targetSpeed = isNitro ? baseSpeed * 2.0 : baseSpeed;
+			currentSpeed = THREE.MathUtils.lerp(currentSpeed, targetSpeed, 0.05);
 
-			let turn = 0;
-			if (keyLeft || btnLeft) turn = 1;
-			if (keyRight || btnRight) turn = -1;
+			// Желаемое направление поворота (-1, 0 или 1)
+			let targetTurn = 0;
+			if (keyLeft || btnLeft) targetTurn = 1;
+			if (keyRight || btnRight) targetTurn = -1;
 
-			carAngle += turn * 0.045;
+			// Плавное изменение поворота руля (инерция)
+			currentTurn = THREE.MathUtils.lerp(currentTurn, targetTurn, 0.1);
+
+			carAngle += currentTurn * 0.035;
 			carGroup.rotation.y = carAngle;
-			carGroup.rotation.z = turn * -0.15; // Наклон кузова
+			carGroup.rotation.z = currentTurn * -0.12; // Мягкий наклон кузова
 
-			// Плавный поворот передних колес в сторону руления
-			let targetWheelRotation = turn * 0.6;
-			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.2);
-			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.2);
+			// Плавный поворот передних колес
+			let targetWheelRotation = currentTurn * 0.5;
+			frontLeftWheelPivot.rotation.y = THREE.MathUtils.lerp(frontLeftWheelPivot.rotation.y, targetWheelRotation, 0.15);
+			frontRightWheelPivot.rotation.y = THREE.MathUtils.lerp(frontRightWheelPivot.rotation.y, targetWheelRotation, 0.15);
 
-			// Вращение самих колес при движении
-			wheelFL.rotation.x -= currentSpeed * 2;
-			wheelFR.rotation.x -= currentSpeed * 2;
-			wheelBL.rotation.x -= currentSpeed * 2;
-			wheelBR.rotation.x -= currentSpeed * 2;
+			// Вращение колес по ходу движения
+			wheelFL.rotation.x -= currentSpeed * 2.5;
+			wheelFR.rotation.x -= currentSpeed * 2.5;
+			wheelBL.rotation.x -= currentSpeed * 2.5;
+			wheelBR.rotation.x -= currentSpeed * 2.5;
 
 			// Движение вперед
 			carGroup.position.x += Math.sin(carAngle) * currentSpeed;
@@ -258,12 +259,16 @@
 			gameOver();
 			}
 
-			// Камера сзади
-			const camDist = 8;
+			// Плавная камера (следует с небольшой инерцией)
+			const camDist = 8.5;
 			const camHeight = 3.5;
-			camera.position.x = carGroup.position.x - Math.sin(carAngle) * camDist;
-			camera.position.z = carGroup.position.z - Math.cos(carAngle) * camDist;
+			let targetCamX = carGroup.position.x - Math.sin(carAngle) * camDist;
+			let targetCamZ = carGroup.position.z - Math.cos(carAngle) * camDist;
+
+			camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
+			camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.1);
 			camera.position.y = carGroup.position.y + camHeight;
+
 			camera.lookAt(carGroup.position.x, carGroup.position.y + 0.5, carGroup.position.z);
 			}
 
