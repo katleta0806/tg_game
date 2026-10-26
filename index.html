@@ -24,6 +24,7 @@
 		<div id="start-screen" class="screen">
 			<h1>CYBER ARENA</h1>
 			<p>Свободная езда по ночной площадке!</p>
+			<p style="font-size: 14px; color: #ff0055;">Управление: A / D или Стрелки (Пробел — Нитро)</p>
 			<button class="menu-btn" id="start-btn">СТАРТ</button>
 		</div>
 
@@ -56,7 +57,6 @@
 			let isNitro = false;
 			let gameActive = false;
 			let carAngle = 0;
-			let turnDirection = 0;
 
 			const scene = new THREE.Scene();
 			scene.background = new THREE.Color(0x050510);
@@ -72,7 +72,7 @@
 			dirLight.position.set(10, 20, -10);
 			scene.add(dirLight);
 
-			// Большая чистая площадка (дорожное покрытие)
+			// Площадка
 			const arenaSize = 150;
 			const ground = new THREE.Mesh(
 			new THREE.PlaneGeometry(arenaSize, arenaSize),
@@ -81,7 +81,7 @@
 			ground.rotation.x = -Math.PI / 2;
 			scene.add(ground);
 
-			// Машина-спорткар
+			// Машина
 			const carGroup = new THREE.Group();
 
 			const body = new THREE.Mesh(
@@ -110,23 +110,43 @@
 			carGroup.position.set(0, 0, 0);
 			scene.add(carGroup);
 
-			// Управление поворотами (исправленные обработчики)
+			// Флаги управления
+			let keyLeft = false;
+			let keyRight = false;
+			let btnLeft = false;
+			let btnRight = false;
+
+			// --- УПРАВЛЕНИЕ С КЛАВИАТУРЫ (A / D / Стрелки / Пробел) ---
+			window.addEventListener('keydown', (e) => {
+			if (e.code === 'KeyA' || e.code === 'ArrowLeft') keyLeft = true;
+			if (e.code === 'KeyD' || e.code === 'ArrowRight') keyRight = true;
+			if (e.code === 'Space') isNitro = true;
+			});
+
+			window.addEventListener('keyup', (e) => {
+			if (e.code === 'KeyA' || e.code === 'ArrowLeft') keyLeft = false;
+			if (e.code === 'KeyD' || e.code === 'ArrowRight') keyRight = false;
+			if (e.code === 'Space') isNitro = false;
+			});
+
+			// --- УПРАВЛЕНИЕ КНОПКАМИ НА ЭКРАНЕ ---
 			const leftBtn = document.getElementById('left');
 			const rightBtn = document.getElementById('right');
 			const nitroBtn = document.getElementById('nitro');
 
-			// Левая кнопка: поворот в одну сторону
-			leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); turnDirection = 1; });
-			leftBtn.addEventListener('pointerup', () => turnDirection = 0);
-			leftBtn.addEventListener('pointerleave', () => turnDirection = 0);
+			leftBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); btnLeft = true; });
+			leftBtn.addEventListener('pointerup', () => btnLeft = false);
+			leftBtn.addEventListener('pointercancel', () => btnLeft = false);
+			leftBtn.addEventListener('pointerleave', () => btnLeft = false);
 
-			// Правая кнопка: поворот в другую сторону
-			rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); turnDirection = -1; });
-			rightBtn.addEventListener('pointerup', () => turnDirection = 0);
-			rightBtn.addEventListener('pointerleave', () => turnDirection = 0);
+			rightBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); btnRight = true; });
+			rightBtn.addEventListener('pointerup', () => btnRight = false);
+			rightBtn.addEventListener('pointercancel', () => btnRight = false);
+			rightBtn.addEventListener('pointerleave', () => btnRight = false);
 
 			nitroBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isNitro = true; });
 			nitroBtn.addEventListener('pointerup', () => isNitro = false);
+			nitroBtn.addEventListener('pointercancel', () => isNitro = false);
 			nitroBtn.addEventListener('pointerleave', () => isNitro = false);
 
 			document.getElementById('start-btn').addEventListener('pointerdown', startGame);
@@ -141,7 +161,10 @@
 			score = 0;
 			carGroup.position.set(0, 0, 0);
 			carAngle = 0;
-			turnDirection = 0;
+			keyLeft = false;
+			keyRight = false;
+			btnLeft = false;
+			btnRight = false;
 			gameActive = true;
 			}
 
@@ -160,24 +183,28 @@
 			if (gameActive) {
 			let currentSpeed = isNitro ? speed * 2.2 : speed;
 
-			// Изменяем угол поворота машины при зажатии кнопок
-			carAngle += turnDirection * 0.04;
-			carGroup.rotation.y = carAngle;
-			carGroup.rotation.z = turnDirection * -0.15; // Наклон машины вбок
+			// Поворот объединяет нажатия с клавиатуры (A / D) и экрана
+			let turn = 0;
+			if (keyLeft || btnLeft) turn = 1;
+			if (keyRight || btnRight) turn = -1;
 
-			// Едем вперед по направлению взгляда машины
+			carAngle += turn * 0.045;
+			carGroup.rotation.y = carAngle;
+			carGroup.rotation.z = turn * -0.15; // Наклон корпуса при повороте
+
+			// Едем вперед
 			carGroup.position.x += Math.sin(carAngle) * currentSpeed;
 			carGroup.position.z += Math.cos(carAngle) * currentSpeed;
 
 			score += 1;
 			document.getElementById('score').innerText = score;
 
-			// Проверка границ площадки (если уедет слишком далеко от центра)
+			// Границы площадки
 			if (Math.abs(carGroup.position.x) > 70 || Math.abs(carGroup.position.z) > 70) {
 			gameOver();
 			}
 
-			// Плавная камера сзади машины
+			// Плавное следование камеры за машиной
 			const camDist = 8;
 			const camHeight = 3.5;
 			camera.position.x = carGroup.position.x - Math.sin(carAngle) * camDist;
